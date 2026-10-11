@@ -6,9 +6,10 @@ import { saveRole, saveToken } from "../auth/authStorage";
 
 interface LoginPageProps {
   onLogin: () => void;
+  onRegister: () => void;
 }
 
-function LoginPage({ onLogin }: LoginPageProps) {
+function LoginPage({ onLogin, onRegister }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -33,9 +34,7 @@ function LoginPage({ onLogin }: LoginPageProps) {
       onLogin();
     } catch (error) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "Login failed"
+        error instanceof Error ? error.message : "Login failed"
       );
     } finally {
       setLoading(false);
@@ -53,10 +52,7 @@ function LoginPage({ onLogin }: LoginPageProps) {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-field">
-            <label htmlFor="email">
-              Email
-            </label>
-
+            <label htmlFor="email">Email</label>
             <input
               id="email"
               type="email"
@@ -68,10 +64,7 @@ function LoginPage({ onLogin }: LoginPageProps) {
           </div>
 
           <div className="form-field">
-            <label htmlFor="password">
-              Password
-            </label>
-
+            <label htmlFor="password">Password</label>
             <input
               id="password"
               type="password"
@@ -96,10 +89,20 @@ function LoginPage({ onLogin }: LoginPageProps) {
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
+
+        <p className="login-subtitle register-footer">
+          Don't have an account?{" "}
+          <button
+            type="button"
+            className="text-button"
+            onClick={onRegister}
+          >
+            Register
+          </button>
+        </p>
       </section>
     </main>
   );
 }
 
 export default LoginPage;
-

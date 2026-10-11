@@ -3,7 +3,7 @@ spring:
     name: asset-management-api
 
   datasource:
-    url: ${DB_URL}
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/asset_management}"
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
@@ -14,6 +14,19 @@ spring:
 
   flyway:
     enabled: true
+
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 server:
   port: ${SERVER_PORT:8080}

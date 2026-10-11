@@ -46,3 +46,15 @@ build/
 
 frontend/node_modules/
 frontend/dist/
+
+
+
+DB_URL=jdbc:postgresql://localhost:5432/asset_management
+DB_USERNAME=postgres
+DB_PASSWORD=1234
+JWT_SECRET=my-asset-management-api-local-secret-2026
+SERVER_PORT=8080
+MAIL_USERNAME=rk.peddibhotla@gmail.com
+MAIL_PASSWORD=kmah ifgj cvmi uyxt
+# Local debugging files
+/startup-error.txt

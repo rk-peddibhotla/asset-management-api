@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import AssetsPage from "./pages/AssetsPage";
 import MyOrdersPage from "./pages/MyOrdersPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
@@ -19,26 +20,41 @@ function App() {
     getToken() !== null
   );
 
-  const [role, setRole] = useState<string | null>(
-    getRole()
-  );
+  const [role, setRole] = useState<string | null>(getRole());
 
   const [page, setPage] = useState<Page>("assets");
+
+  const [showRegister, setShowRegister] = useState(false);
 
   function handleLogin() {
     setRole(getRole());
     setAuthenticated(true);
+    setShowRegister(false);
   }
 
   function handleLogout() {
     clearToken();
     setRole(null);
     setAuthenticated(false);
+    setShowRegister(false);
     setPage("assets");
   }
 
   if (!authenticated) {
-    return <LoginPage onLogin={handleLogin} />;
+    if (showRegister) {
+      return (
+        <RegisterPage
+          onBackToLogin={() => setShowRegister(false)}
+        />
+      );
+    }
+
+    return (
+      <LoginPage
+        onLogin={handleLogin}
+        onRegister={() => setShowRegister(true)}
+      />
+    );
   }
 
   return (
@@ -103,4 +119,3 @@ function App() {
 }
 
 export default App;
-

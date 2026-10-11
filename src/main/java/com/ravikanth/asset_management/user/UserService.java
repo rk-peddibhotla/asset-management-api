@@ -1,6 +1,10 @@
 
 package com.ravikanth.asset_management.user;
 
+import com.ravikanth.asset_management.common.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,15 +15,21 @@ import java.util.Optional;
 @Service
 public class UserService {
 
+    private static final Logger logger =
+            LoggerFactory.getLogger(UserService.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     public UserService(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            EmailService emailService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     // Register a new student
@@ -30,8 +40,6 @@ public class UserService {
             String password,
             String mobileNumber
     ) {
-
-        // Check whether the email is already registered
         Optional<User> existingUser = userRepository.findByEmail(email);
 
         if (existingUser.isPresent()) {
@@ -40,22 +48,16 @@ public class UserService {
             );
         }
 
-        // Create a new user
         User user = new User();
 
         user.setFullName(fullName);
         user.setEmail(email);
 
-        // Store the encoded password, not the original password
         String encodedPassword = passwordEncoder.encode(password);
         user.setPasswordHash(encodedPassword);
 
         user.setMobileNumber(mobileNumber);
-
-        // Every new registered user starts as a student
         user.setRole(UserRole.STUDENT);
-
-        // An admin must approve the account
         user.setAccountStatus(AccountStatus.UNAPPROVED);
 
         return userRepository.save(user);
@@ -64,17 +66,14 @@ public class UserService {
     // Get all users waiting for admin approval
     @Transactional(readOnly = true)
     public List<User> getPendingUsers() {
-
         return userRepository.findByAccountStatusOrderByCreatedAtDesc(
                 AccountStatus.UNAPPROVED
         );
     }
 
-    // Approve a user
+    // Approve a user and send an approval email
     @Transactional
     public User approveUser(Long userId) {
-
-        // Find the user
         Optional<User> userResult = userRepository.findById(userId);
 
         if (userResult.isEmpty()) {
@@ -85,25 +84,56 @@ public class UserService {
 
         User user = userResult.get();
 
-        // Only unapproved users can be approved
         if (user.getAccountStatus() != AccountStatus.UNAPPROVED) {
             throw new IllegalArgumentException(
                     "Only unapproved users can be approved"
             );
         }
 
-        // Change the account status
         user.setAccountStatus(AccountStatus.ACTIVE);
 
-        // Save the updated user
-        return userRepository.save(user);
+        User approvedUser = userRepository.save(user);
+
+        // Email failure should not stop account approval
+        try {
+            String subject =
+                    "Your Asset Management account has been approved";
+
+            String body =
+                    "Hello " + approvedUser.getFullName() + ",\n\n"
+                    + "Your Asset Management System account has been "
+                    + "approved by the administrator.\n\n"
+                    + "You can now log in using your registered email "
+                    + "address and password.\n\n"
+                    + "Thank you,\n"
+                    + "Asset Management Team";
+
+            emailService.sendEmail(
+                    approvedUser.getEmail(),
+                    subject,
+                    body
+            );
+
+            logger.info(
+                    "Approval email sent for user ID {}",
+                    userId
+            );
+
+        } catch (MailException e) {
+            logger.warn(
+                    "User ID {} was approved, but the approval email "
+                    + "could not be sent.",
+                    userId,
+                    e
+            );
+        }
+
+        return approvedUser;
     }
 
     // Block a user
     @Transactional
     public User blockUser(Long userId) {
-
-        // Find the user
         Optional<User> userResult = userRepository.findById(userId);
 
         if (userResult.isEmpty()) {
@@ -114,18 +144,14 @@ public class UserService {
 
         User user = userResult.get();
 
-        // Do not block a user who is already blocked
         if (user.getAccountStatus() == AccountStatus.BLOCKED) {
             throw new IllegalArgumentException(
                     "User is already blocked"
             );
         }
 
-        // Change the account status
         user.setAccountStatus(AccountStatus.BLOCKED);
 
-        // Save the updated user
         return userRepository.save(user);
     }
 }
-
