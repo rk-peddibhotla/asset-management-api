@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -6,14 +5,22 @@ import AssetsPage from "./pages/AssetsPage";
 import MyOrdersPage from "./pages/MyOrdersPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
+import ManageAssetsPage from "./pages/ManageAssetsPage";
+
 import {
   getRole,
   getToken,
   clearToken,
 } from "./auth/authStorage";
+
 import "./App.css";
 
-type Page = "assets" | "orders" | "admin-users" | "admin-orders";
+type Page =
+  | "assets"
+  | "orders"
+  | "manage-assets"
+  | "admin-users"
+  | "admin-orders";
 
 function App() {
   const [authenticated, setAuthenticated] = useState(
@@ -80,6 +87,13 @@ function App() {
           {role === "ADMIN" && (
             <>
               <button
+                className={page === "manage-assets" ? "active" : ""}
+                onClick={() => setPage("manage-assets")}
+              >
+                Manage Assets
+              </button>
+
+              <button
                 className={page === "admin-users" ? "active" : ""}
                 onClick={() => setPage("admin-users")}
               >
@@ -105,6 +119,10 @@ function App() {
         {page === "assets" && <AssetsPage />}
 
         {page === "orders" && <MyOrdersPage />}
+
+        {page === "manage-assets" && role === "ADMIN" && (
+          <ManageAssetsPage />
+        )}
 
         {page === "admin-users" && role === "ADMIN" && (
           <AdminUsersPage />

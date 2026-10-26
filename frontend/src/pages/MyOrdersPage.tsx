@@ -1,9 +1,5 @@
-
 import { useEffect, useState } from "react";
-import {
-  getMyOrders,
-  returnOrder,
-} from "../api/orders";
+import { getMyOrders, returnOrder } from "../api/orders";
 import type { Order } from "../api/orders";
 
 function MyOrdersPage() {
@@ -14,24 +10,20 @@ function MyOrdersPage() {
     null
   );
 
-  async function loadOrders() {
-    setError("");
-
-    try {
-      const response = await getMyOrders();
-      setOrders(response);
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to load orders"
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
+    async function loadOrders() {
+      try {
+        const response = await getMyOrders();
+        setOrders(response);
+      } catch (error) {
+        setError(
+          error instanceof Error ? error.message : "Failed to load orders"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadOrders();
   }, []);
 
@@ -49,9 +41,7 @@ function MyOrdersPage() {
       );
     } catch (error) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to return order"
+        error instanceof Error ? error.message : "Failed to return order"
       );
     } finally {
       setReturningOrderId(null);
@@ -89,16 +79,12 @@ function MyOrdersPage() {
       )}
 
       {orders.length === 0 ? (
-        <p className="empty-message">
-          You have no orders.
-        </p>
+        <p className="empty-message">You have no orders.</p>
       ) : (
         <ul className="item-list">
           {orders.map((order) => (
             <li className="item" key={order.id}>
-              <h3 className="item-title">
-                {order.assetName}
-              </h3>
+              <h3 className="item-title">{order.assetName}</h3>
 
               <p className="item-detail">
                 <strong>Order ID:</strong> {order.id}
@@ -106,20 +92,16 @@ function MyOrdersPage() {
 
               <p className="item-detail">
                 <strong>Status:</strong>{" "}
-                <span className="status">
-                  {order.status}
-                </span>
+                <span className="status">{order.status}</span>
               </p>
 
               <p className="item-detail">
-                <strong>Requested:</strong>{" "}
-                {formatDate(order.requestedAt)}
+                <strong>Requested:</strong> {formatDate(order.requestedAt)}
               </p>
 
               {order.dueAt && (
                 <p className="item-detail">
-                  <strong>Due:</strong>{" "}
-                  {formatDate(order.dueAt)}
+                  <strong>Due:</strong> {formatDate(order.dueAt)}
                 </p>
               )}
 
@@ -131,8 +113,7 @@ function MyOrdersPage() {
               )}
 
               <p className="item-detail">
-                <strong>Fine:</strong>{" "}
-                ₹{order.fineAmount.toFixed(2)}
+                <strong>Fine:</strong> ₹{order.fineAmount.toFixed(2)}
               </p>
 
               {order.status === "ACTIVE" && (
@@ -157,4 +138,3 @@ function MyOrdersPage() {
 }
 
 export default MyOrdersPage;
-

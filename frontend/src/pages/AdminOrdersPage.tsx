@@ -15,24 +15,22 @@ function AdminOrdersPage() {
     null
   );
 
-  async function loadPendingOrders() {
-    setError("");
-
-    try {
-      const response = await getPendingOrders();
-      setOrders(response);
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to load pending orders"
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
+    async function loadPendingOrders() {
+      try {
+        const response = await getPendingOrders();
+        setOrders(response);
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load pending orders"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadPendingOrders();
   }, []);
 
@@ -162,4 +160,3 @@ function AdminOrdersPage() {
 }
 
 export default AdminOrdersPage;
-

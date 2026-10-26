@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import {
   approveUser,
@@ -15,24 +14,22 @@ function AdminUsersPage() {
     null
   );
 
-  async function loadPendingUsers() {
-    setError("");
-
-    try {
-      const response = await getPendingUsers();
-      setUsers(response);
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to load pending users"
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
+    async function loadPendingUsers() {
+      try {
+        const response = await getPendingUsers();
+        setUsers(response);
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load pending users"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadPendingUsers();
   }, []);
 
@@ -93,24 +90,19 @@ function AdminUsersPage() {
       )}
 
       {users.length === 0 ? (
-        <p className="empty-message">
-          No pending users.
-        </p>
+        <p className="empty-message">No pending users.</p>
       ) : (
         <ul className="item-list">
           {users.map((user) => (
             <li className="item" key={user.id}>
-              <h3 className="item-title">
-                {user.fullName}
-              </h3>
+              <h3 className="item-title">{user.fullName}</h3>
 
               <p className="item-detail">
                 <strong>Email:</strong> {user.email}
               </p>
 
               <p className="item-detail">
-                <strong>Mobile:</strong>{" "}
-                {user.mobileNumber ?? "N/A"}
+                <strong>Mobile:</strong> {user.mobileNumber ?? "N/A"}
               </p>
 
               <p className="item-detail">
@@ -119,9 +111,7 @@ function AdminUsersPage() {
 
               <p className="item-detail">
                 <strong>Status:</strong>{" "}
-                <span className="status">
-                  {user.accountStatus}
-                </span>
+                <span className="status">{user.accountStatus}</span>
               </p>
 
               <div className="item-actions">
@@ -154,4 +144,3 @@ function AdminUsersPage() {
 }
 
 export default AdminUsersPage;
-
