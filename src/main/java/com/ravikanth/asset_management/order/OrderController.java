@@ -6,7 +6,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -84,33 +83,29 @@ public class OrderController {
 
         Long userId = Long.valueOf(authentication.getName());
 
-        List<Order> orders =
-                orderService.getOrdersForUser(userId);
-
-        List<OrderResponse> responses = new ArrayList<>();
-
-        for (Order order : orders) {
-            OrderResponse response = OrderResponse.from(order);
-            responses.add(response);
-        }
-
-        return responses;
+        return orderService.getOrdersForUser(userId)
+                .stream()
+                .map(OrderResponse::from)
+                .toList();
     }
 
     // Get orders waiting for admin approval
     @GetMapping("/admin/orders/pending")
     public List<OrderResponse> getPendingOrders() {
 
-        List<Order> orders =
-                orderService.getPendingOrders();
+        return orderService.getPendingOrders()
+                .stream()
+                .map(OrderResponse::from)
+                .toList();
+    }
 
-        List<OrderResponse> responses = new ArrayList<>();
+    // Get complete order history for administrators
+    @GetMapping("/admin/orders")
+    public List<OrderResponse> getAllOrders() {
 
-        for (Order order : orders) {
-            OrderResponse response = OrderResponse.from(order);
-            responses.add(response);
-        }
-
-        return responses;
+        return orderService.getAllOrders()
+                .stream()
+                .map(OrderResponse::from)
+                .toList();
     }
 }

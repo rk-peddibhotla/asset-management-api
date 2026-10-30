@@ -161,8 +161,7 @@ class AuthControllerTest {
     void loginUser_shouldRejectBlockedUser() throws Exception {
 
         String email =
-                "blocked-login-" + System.nanoTime()
-                        + "@example.com";
+                "blocked-login-" + System.nanoTime() + "@example.com";
 
         String rawPassword = "password123";
 
@@ -237,11 +236,16 @@ class AuthControllerTest {
                         ))
         )
         .andExpect(status().isOk())
-        .andExpect(
-                jsonPath("$").value(
-                        "Authenticated as: " + user.getId()
-                )
-        );
+        .andExpect(jsonPath("$.id").value(user.getId()))
+        .andExpect(jsonPath("$.fullName")
+                .value("Protected Endpoint User"))
+        .andExpect(jsonPath("$.email").value(email))
+        .andExpect(jsonPath("$.mobileNumber")
+                .value("9876543210"))
+        .andExpect(jsonPath("$.role").value("STUDENT"))
+        .andExpect(jsonPath("$.accountStatus").value("ACTIVE"))
+        .andExpect(jsonPath("$.password").doesNotExist())
+        .andExpect(jsonPath("$.passwordHash").doesNotExist());
     }
 
     @Test
@@ -321,4 +325,3 @@ class AuthControllerTest {
         );
     }
 }
-

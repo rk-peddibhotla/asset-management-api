@@ -40,7 +40,8 @@ public class UserService {
             String password,
             String mobileNumber
     ) {
-        Optional<User> existingUser = userRepository.findByEmail(email);
+        Optional<User> existingUser =
+                userRepository.findByEmail(email);
 
         if (existingUser.isPresent()) {
             throw new IllegalArgumentException(
@@ -53,9 +54,10 @@ public class UserService {
         user.setFullName(fullName);
         user.setEmail(email);
 
-        String encodedPassword = passwordEncoder.encode(password);
-        user.setPasswordHash(encodedPassword);
+        String encodedPassword =
+                passwordEncoder.encode(password);
 
+        user.setPasswordHash(encodedPassword);
         user.setMobileNumber(mobileNumber);
         user.setRole(UserRole.STUDENT);
         user.setAccountStatus(AccountStatus.UNAPPROVED);
@@ -71,10 +73,18 @@ public class UserService {
         );
     }
 
+    // Get all registered users for administrators
+    @Transactional(readOnly = true)
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
     // Approve a user and send an approval email
     @Transactional
     public User approveUser(Long userId) {
-        Optional<User> userResult = userRepository.findById(userId);
+
+        Optional<User> userResult =
+                userRepository.findById(userId);
 
         if (userResult.isEmpty()) {
             throw new IllegalArgumentException(
@@ -134,7 +144,9 @@ public class UserService {
     // Block a user
     @Transactional
     public User blockUser(Long userId) {
-        Optional<User> userResult = userRepository.findById(userId);
+
+        Optional<User> userResult =
+                userRepository.findById(userId);
 
         if (userResult.isEmpty()) {
             throw new IllegalArgumentException(

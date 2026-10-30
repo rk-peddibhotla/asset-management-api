@@ -1,6 +1,9 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
+
+import AuthLayout from "../components/AuthLayout";
+
 import { login } from "../api/auth";
 import { saveRole, saveToken } from "../auth/authStorage";
 
@@ -34,7 +37,9 @@ function LoginPage({ onLogin, onRegister }: LoginPageProps) {
       onLogin();
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Login failed"
+        error instanceof Error
+          ? error.message
+          : "Unable to sign in. Please try again."
       );
     } finally {
       setLoading(false);
@@ -42,66 +47,81 @@ function LoginPage({ onLogin, onRegister }: LoginPageProps) {
   }
 
   return (
-    <main className="login-page">
-      <section className="login-panel">
-        <h1>Asset Management</h1>
+    <AuthLayout>
+      <h1>Sign in</h1>
 
-        <p className="login-subtitle">
-          Sign in to continue
-        </p>
+      <p className="auth-panel-description">
+        Enter your account credentials to continue.
+      </p>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-field">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              required
-            />
-          </div>
+      <form onSubmit={handleSubmit} className="login-form">
+        <div className="form-field">
+          <label htmlFor="email">Email address</label>
 
-          <div className="form-field">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </div>
+          <input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+            aria-invalid={Boolean(error)}
+            aria-describedby={
+              error ? "login-error" : undefined
+            }
+            required
+          />
+        </div>
 
-          {error && (
-            <p className="error-message" role="alert">
-              {error}
-            </p>
-          )}
+        <div className="form-field">
+          <label htmlFor="password">Password</label>
 
-          <button
-            type="submit"
-            className="primary-button login-button"
-            disabled={loading}
+          <input
+            id="password"
+            type="password"
+            placeholder="Enter your password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="current-password"
+            aria-invalid={Boolean(error)}
+            aria-describedby={
+              error ? "login-error" : undefined
+            }
+            required
+          />
+        </div>
+
+        {error && (
+          <p
+            id="login-error"
+            className="error-message"
+            role="alert"
           >
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
+            {error}
+          </p>
+        )}
 
-        <p className="login-subtitle register-footer">
-          Don't have an account?{" "}
-          <button
-            type="button"
-            className="text-button"
-            onClick={onRegister}
-          >
-            Register
-          </button>
-        </p>
-      </section>
-    </main>
+        <button
+          type="submit"
+          className="primary-button login-button"
+          disabled={loading}
+        >
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
+      </form>
+
+      <p className="register-footer">
+        Don't have an account?{" "}
+        <button
+          type="button"
+          className="text-button"
+          onClick={onRegister}
+          disabled={loading}
+        >
+          Register
+        </button>
+      </p>
+    </AuthLayout>
   );
 }
 

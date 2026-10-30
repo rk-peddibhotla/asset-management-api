@@ -1,15 +1,19 @@
+
 import { useEffect, useState } from "react";
+
 import {
   approveUser,
   blockUser,
   getPendingUsers,
 } from "../api/adminUsers";
+
 import type { AdminUser } from "../api/adminUsers";
 
 function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [processingUserId, setProcessingUserId] = useState<number | null>(
     null
   );
@@ -23,18 +27,19 @@ function AdminUsersPage() {
         setError(
           error instanceof Error
             ? error.message
-            : "Failed to load pending users"
+            : "Failed to load pending users."
         );
       } finally {
         setLoading(false);
       }
     }
 
-    loadPendingUsers();
+    void loadPendingUsers();
   }, []);
 
   async function handleApprove(userId: number) {
     setError("");
+    setSuccess("");
     setProcessingUserId(userId);
 
     try {
@@ -43,11 +48,13 @@ function AdminUsersPage() {
       setUsers((currentUsers) =>
         currentUsers.filter((user) => user.id !== userId)
       );
+
+      setSuccess("User approved successfully.");
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to approve user"
+          : "Failed to approve user."
       );
     } finally {
       setProcessingUserId(null);
@@ -56,6 +63,7 @@ function AdminUsersPage() {
 
   async function handleBlock(userId: number) {
     setError("");
+    setSuccess("");
     setProcessingUserId(userId);
 
     try {
@@ -64,24 +72,26 @@ function AdminUsersPage() {
       setUsers((currentUsers) =>
         currentUsers.filter((user) => user.id !== userId)
       );
+
+      setSuccess("User blocked successfully.");
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to block user"
+          : "Failed to block user."
       );
     } finally {
       setProcessingUserId(null);
     }
   }
 
-  if (loading) {
-    return <p>Loading pending users...</p>;
-  }
-
   return (
     <section>
       <h2 className="page-title">Pending Users</h2>
+
+      <p className="page-description">
+        Review new user registrations and approve or block accounts.
+      </p>
 
       {error && (
         <p className="error-message" role="alert">
@@ -89,55 +99,83 @@ function AdminUsersPage() {
         </p>
       )}
 
-      {users.length === 0 ? (
-        <p className="empty-message">No pending users.</p>
+      {success && (
+        <p className="success-message" role="status">
+          {success}
+        </p>
+      )}
+
+      {loading ? (
+        <p className="empty-message">
+          Loading pending users...
+        </p>
+      ) : users.length === 0 ? (
+        !error && (
+          <p className="empty-message">
+            No pending users found.
+          </p>
+        )
       ) : (
-        <ul className="item-list">
-          {users.map((user) => (
-            <li className="item" key={user.id}>
-              <h3 className="item-title">{user.fullName}</h3>
+        <div className="table-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Full Name</th>
+                <th scope="col">Email Address</th>
+                <th scope="col">Mobile Number</th>
+                <th scope="col">Role</th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
 
-              <p className="item-detail">
-                <strong>Email:</strong> {user.email}
-              </p>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td>{user.fullName}</td>
 
-              <p className="item-detail">
-                <strong>Mobile:</strong> {user.mobileNumber ?? "N/A"}
-              </p>
+                  <td>{user.email}</td>
 
-              <p className="item-detail">
-                <strong>Role:</strong> {user.role}
-              </p>
+                  <td>{user.mobileNumber ?? "N/A"}</td>
 
-              <p className="item-detail">
-                <strong>Status:</strong>{" "}
-                <span className="status">{user.accountStatus}</span>
-              </p>
+                  <td>{user.role}</td>
 
-              <div className="item-actions">
-                <button
-                  className="primary-button"
-                  onClick={() => handleApprove(user.id)}
-                  disabled={processingUserId === user.id}
-                >
-                  {processingUserId === user.id
-                    ? "Processing..."
-                    : "Approve"}
-                </button>
+                  <td>
+                    <span
+                      className={`status status-${user.accountStatus.toLowerCase()}`}
+                    >
+                      {user.accountStatus}
+                    </span>
+                  </td>
 
-                <button
-                  className="danger-button"
-                  onClick={() => handleBlock(user.id)}
-                  disabled={processingUserId === user.id}
-                >
-                  {processingUserId === user.id
-                    ? "Processing..."
-                    : "Block"}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+                  <td>
+                    <div className="table-actions">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => handleApprove(user.id)}
+                        disabled={processingUserId !== null}
+                      >
+                        {processingUserId === user.id
+                          ? "Processing..."
+                          : "Approve"}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="danger-button"
+                        onClick={() => handleBlock(user.id)}
+                        disabled={processingUserId !== null}
+                      >
+                        Block
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

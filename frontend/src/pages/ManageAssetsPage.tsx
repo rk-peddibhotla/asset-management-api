@@ -1,10 +1,8 @@
 
 import { useEffect, useState, type FormEvent } from "react";
-import {
-  createAsset,
-  getAssets,
-  type Asset,
-} from "../api/assets";
+
+import { createAsset } from "../api/assets";
+
 import {
   createCategory,
   getCategories,
@@ -13,7 +11,6 @@ import {
 
 function ManageAssetsPage() {
   const [categories, setCategories] = useState<AssetCategory[]>([]);
-  const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [category, setCategory] = useState("");
@@ -27,38 +24,36 @@ function ManageAssetsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [creatingAsset, setCreatingAsset] = useState(false);
+
   useEffect(() => {
-    async function loadData() {
-      setError("");
-
+    async function loadCategories() {
       try {
-        const [categoryResponse, assetResponse] = await Promise.all([
-          getCategories(),
-          getAssets(),
-        ]);
-
-        setCategories(categoryResponse);
-        setAssets(assetResponse);
+        const response = await getCategories();
+        setCategories(response);
       } catch (error) {
         setError(
           error instanceof Error
             ? error.message
-            : "Failed to load management data"
+            : "Failed to load categories."
         );
       } finally {
         setLoading(false);
       }
     }
 
-    void loadData();
+    void loadCategories();
   }, []);
 
   async function handleCreateCategory(
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
+
     setError("");
     setSuccess("");
+    setCreatingCategory(true);
 
     try {
       const newCategory = await createCategory({
@@ -68,15 +63,19 @@ function ManageAssetsPage() {
 
       setCategories((current) => [...current, newCategory]);
       setCategoryId(String(newCategory.id));
+
       setCategory("");
       setSubCategory("");
+
       setSuccess("Category created successfully.");
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to create category"
+          : "Failed to create category."
       );
+    } finally {
+      setCreatingCategory(false);
     }
   }
 
@@ -84,6 +83,7 @@ function ManageAssetsPage() {
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
+
     setError("");
     setSuccess("");
 
@@ -92,15 +92,15 @@ function ManageAssetsPage() {
       return;
     }
 
+    setCreatingAsset(true);
+
     try {
-      const newAsset = await createAsset({
+      await createAsset({
         name: name.trim(),
         manufacturer: manufacturer.trim(),
         price: Number(price),
         categoryId: Number(categoryId),
       });
-
-      setAssets((current) => [...current, newAsset]);
 
       setName("");
       setManufacturer("");
@@ -111,18 +111,20 @@ function ManageAssetsPage() {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to create asset"
+          : "Failed to create asset."
       );
+    } finally {
+      setCreatingAsset(false);
     }
-  }
-
-  if (loading) {
-    return <p>Loading asset management...</p>;
   }
 
   return (
     <section>
       <h2 className="page-title">Manage Assets</h2>
+
+      <p className="page-description">
+        Add asset categories and register new assets.
+      </p>
 
       {error && (
         <p className="error-message" role="alert">
@@ -130,142 +132,182 @@ function ManageAssetsPage() {
         </p>
       )}
 
-      {success && <p role="status">{success}</p>}
+      {success && (
+        <p className="success-message" role="status">
+          {success}
+        </p>
+      )}
 
-      <section>
-        <h3>Create Category</h3>
+      {loading ? (
+        <p className="empty-message">
+          Loading categories...
+        </p>
+      ) : (
+        <div className="management-grid">
+          <section className="management-panel">
+            <h3>Add Category</h3>
 
-        <form onSubmit={handleCreateCategory}>
-          <div>
-            <label htmlFor="category">Category</label>
-            <input
-              id="category"
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              placeholder="e.g. Laptop"
-              maxLength={100}
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="subCategory">Subcategory</label>
-            <input
-              id="subCategory"
-              value={subCategory}
-              onChange={(event) => setSubCategory(event.target.value)}
-              placeholder="e.g. Business Laptop"
-              maxLength={100}
-              required
-            />
-          </div>
-
-          <button className="primary-button" type="submit">
-            Create Category
-          </button>
-        </form>
-      </section>
-
-      <section>
-        <h3>Create Asset</h3>
-
-        <form onSubmit={handleCreateAsset}>
-          <div>
-            <label htmlFor="assetName">Asset Name</label>
-            <input
-              id="assetName"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="e.g. ThinkPad T14"
-              maxLength={200}
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="manufacturer">Manufacturer</label>
-            <input
-              id="manufacturer"
-              value={manufacturer}
-              onChange={(event) => setManufacturer(event.target.value)}
-              placeholder="e.g. Lenovo"
-              maxLength={100}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="price">Price (₹)</label>
-            <input
-              id="price"
-              type="number"
-              min="0"
-              step="0.01"
-              value={price}
-              onChange={(event) => setPrice(event.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="assetCategory">Category</label>
-            <select
-              id="assetCategory"
-              value={categoryId}
-              onChange={(event) => setCategoryId(event.target.value)}
-              required
+            <form
+              className="management-form"
+              onSubmit={handleCreateCategory}
             >
-              <option value="">Select a category</option>
+              <div className="form-field">
+                <label htmlFor="category">
+                  Category
+                </label>
 
-              {categories.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.category} / {item.subCategory}
-                </option>
-              ))}
-            </select>
+                <input
+                  id="category"
+                  type="text"
+                  value={category}
+                  onChange={(event) =>
+                    setCategory(event.target.value)
+                  }
+                  placeholder="e.g. Electronics"
+                  maxLength={100}
+                  required
+                />
+              </div>
 
-            {categories.length === 0 && (
-              <p>Create a category before creating an asset.</p>
-            )}
-          </div>
+              <div className="form-field">
+                <label htmlFor="subCategory">
+                  Subcategory
+                </label>
 
-          <button
-            className="primary-button"
-            type="submit"
-            disabled={categories.length === 0}
-          >
-            Create Asset
-          </button>
-        </form>
-      </section>
+                <input
+                  id="subCategory"
+                  type="text"
+                  value={subCategory}
+                  onChange={(event) =>
+                    setSubCategory(event.target.value)
+                  }
+                  placeholder="e.g. Laptops"
+                  maxLength={100}
+                  required
+                />
+              </div>
 
-      <section>
-        <h3>Existing Assets ({assets.length})</h3>
+              <button
+                type="submit"
+                className="primary-button"
+                disabled={creatingCategory}
+              >
+                {creatingCategory
+                  ? "Adding..."
+                  : "Add Category"}
+              </button>
+            </form>
+          </section>
 
-        {assets.length === 0 ? (
-          <p>No assets found.</p>
-        ) : (
-          <ul className="item-list">
-            {assets.map((asset) => (
-              <li className="item" key={asset.id}>
-                <h4 className="item-title">{asset.name}</h4>
+          <section className="management-panel">
+            <h3>Add Asset</h3>
 
-                <p className="item-detail">
-                  Manufacturer: {asset.manufacturer ?? "N/A"}
-                </p>
+            <form
+              className="management-form"
+              onSubmit={handleCreateAsset}
+            >
+              <div className="form-field">
+                <label htmlFor="assetName">
+                  Asset Name
+                </label>
 
-                <p className="item-detail">
-                  Price: ₹{asset.price.toFixed(2)}
-                </p>
+                <input
+                  id="assetName"
+                  type="text"
+                  value={name}
+                  onChange={(event) =>
+                    setName(event.target.value)
+                  }
+                  placeholder="e.g. ThinkPad T14"
+                  maxLength={200}
+                  required
+                />
+              </div>
 
-                <p className="item-detail">
-                  Category: {asset.category.category} /{" "}
-                  {asset.category.subCategory}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+              <div className="form-field">
+                <label htmlFor="manufacturer">
+                  Manufacturer
+                </label>
+
+                <input
+                  id="manufacturer"
+                  type="text"
+                  value={manufacturer}
+                  onChange={(event) =>
+                    setManufacturer(event.target.value)
+                  }
+                  placeholder="e.g. Lenovo"
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="price">
+                  Price (₹)
+                </label>
+
+                <input
+                  id="price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={price}
+                  onChange={(event) =>
+                    setPrice(event.target.value)
+                  }
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="assetCategory">
+                  Category
+                </label>
+
+                <select
+                  id="assetCategory"
+                  value={categoryId}
+                  onChange={(event) =>
+                    setCategoryId(event.target.value)
+                  }
+                  required
+                >
+                  <option value="">
+                    Select a category
+                  </option>
+
+                  {categories.map((item) => (
+                    <option
+                      key={item.id}
+                      value={item.id}
+                    >
+                      {item.category} / {item.subCategory}
+                    </option>
+                  ))}
+                </select>
+
+                {categories.length === 0 && (
+                  <p className="form-hint">
+                    Add a category before creating an asset.
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="primary-button"
+                disabled={
+                  categories.length === 0 || creatingAsset
+                }
+              >
+                {creatingAsset
+                  ? "Adding..."
+                  : "Add Asset"}
+              </button>
+            </form>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

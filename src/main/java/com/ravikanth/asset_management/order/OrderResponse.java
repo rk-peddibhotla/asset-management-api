@@ -1,4 +1,3 @@
-
 package com.ravikanth.asset_management.order;
 
 import java.math.BigDecimal;
@@ -9,6 +8,8 @@ public class OrderResponse {
 
     private Long id;
     private Long userId;
+    private String userName;
+    private String userEmail;
     private Long assetId;
     private String assetName;
     private OrderStatus status;
@@ -18,10 +19,11 @@ public class OrderResponse {
     private LocalDateTime returnedAt;
     private BigDecimal fineAmount;
 
-    // Create an API response using the given values
     public OrderResponse(
             Long id,
             Long userId,
+            String userName,
+            String userEmail,
             Long assetId,
             String assetName,
             OrderStatus status,
@@ -33,6 +35,8 @@ public class OrderResponse {
     ) {
         this.id = id;
         this.userId = userId;
+        this.userName = userName;
+        this.userEmail = userEmail;
         this.assetId = assetId;
         this.assetName = assetName;
         this.status = status;
@@ -49,6 +53,8 @@ public class OrderResponse {
         return new OrderResponse(
                 order.getId(),
                 order.getUser().getId(),
+                order.getUser().getFullName(),
+                order.getUser().getEmail(),
                 order.getAsset().getId(),
                 order.getAsset().getName(),
                 order.getStatus(),
@@ -66,6 +72,14 @@ public class OrderResponse {
 
     public Long getUserId() {
         return userId;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
     }
 
     public Long getAssetId() {

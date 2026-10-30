@@ -1,4 +1,6 @@
+
 import { useEffect, useState } from "react";
+
 import { getMyOrders, returnOrder } from "../api/orders";
 import type { Order } from "../api/orders";
 
@@ -6,6 +8,7 @@ function MyOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [returningOrderId, setReturningOrderId] = useState<number | null>(
     null
   );
@@ -17,18 +20,21 @@ function MyOrdersPage() {
         setOrders(response);
       } catch (error) {
         setError(
-          error instanceof Error ? error.message : "Failed to load orders"
+          error instanceof Error
+            ? error.message
+            : "Failed to load orders."
         );
       } finally {
         setLoading(false);
       }
     }
 
-    loadOrders();
+    void loadOrders();
   }, []);
 
   async function handleReturn(orderId: number) {
     setError("");
+    setSuccess("");
     setReturningOrderId(orderId);
 
     try {
@@ -39,38 +45,30 @@ function MyOrdersPage() {
           order.id === orderId ? updatedOrder : order
         )
       );
+
+      setSuccess("Asset returned successfully.");
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Failed to return order"
+        error instanceof Error
+          ? error.message
+          : "Failed to return asset."
       );
     } finally {
       setReturningOrderId(null);
     }
   }
 
-  function formatDate(value: string): string {
-    return new Date(value).toLocaleString();
-  }
-
-  if (loading) {
-    return <p>Loading orders...</p>;
-  }
-
-  if (error && orders.length === 0) {
-    return (
-      <section>
-        <h2 className="page-title">My Orders</h2>
-
-        <p className="error-message" role="alert">
-          {error}
-        </p>
-      </section>
-    );
+  function formatDate(value: string | null | undefined): string {
+    return value ? new Date(value).toLocaleString() : "—";
   }
 
   return (
     <section>
       <h2 className="page-title">My Orders</h2>
+
+      <p className="page-description">
+        View borrowing requests and return records.
+      </p>
 
       {error && (
         <p className="error-message" role="alert">
@@ -78,61 +76,77 @@ function MyOrdersPage() {
         </p>
       )}
 
-      {orders.length === 0 ? (
-        <p className="empty-message">You have no orders.</p>
-      ) : (
-        <ul className="item-list">
-          {orders.map((order) => (
-            <li className="item" key={order.id}>
-              <h3 className="item-title">{order.assetName}</h3>
-
-              <p className="item-detail">
-                <strong>Order ID:</strong> {order.id}
-              </p>
-
-              <p className="item-detail">
-                <strong>Status:</strong>{" "}
-                <span className="status">{order.status}</span>
-              </p>
-
-              <p className="item-detail">
-                <strong>Requested:</strong> {formatDate(order.requestedAt)}
-              </p>
-
-              {order.dueAt && (
-                <p className="item-detail">
-                  <strong>Due:</strong> {formatDate(order.dueAt)}
-                </p>
-              )}
-
-              {order.returnedAt && (
-                <p className="item-detail">
-                  <strong>Returned:</strong>{" "}
-                  {formatDate(order.returnedAt)}
-                </p>
-              )}
-
-              <p className="item-detail">
-                <strong>Fine:</strong> ₹{order.fineAmount.toFixed(2)}
-              </p>
-
-              {order.status === "ACTIVE" && (
-                <div className="item-actions">
-                  <button
-                    className="primary-button"
-                    onClick={() => handleReturn(order.id)}
-                    disabled={returningOrderId === order.id}
-                  >
-                    {returningOrderId === order.id
-                      ? "Returning..."
-                      : "Return Asset"}
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+      {success && (
+        <p className="success-message" role="status">
+          {success}
+        </p>
       )}
+
+      {loading ? (
+        <p className="empty-message">Loading orders...</p>
+      ) : orders.length === 0 && !error ? (
+        <p className="empty-message">No orders found.</p>
+      ) : orders.length > 0 ? (
+        <div className="table-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Order ID</th>
+                <th scope="col">Asset Name</th>
+                <th scope="col">Status</th>
+                <th scope="col">Requested On</th>
+                <th scope="col">Due Date</th>
+                <th scope="col">Returned On</th>
+                <th scope="col">Fine</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order.id}>
+                  <td>#{order.id}</td>
+
+                  <td>{order.assetName}</td>
+
+                  <td>
+                    <span
+                      className={`status status-${order.status.toLowerCase()}`}
+                    >
+                      {order.status}
+                    </span>
+                  </td>
+
+                  <td>{formatDate(order.requestedAt)}</td>
+
+                  <td>{formatDate(order.dueAt)}</td>
+
+                  <td>{formatDate(order.returnedAt)}</td>
+
+                  <td>₹{order.fineAmount.toFixed(2)}</td>
+
+                  <td>
+                    {order.status === "ACTIVE" ? (
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => handleReturn(order.id)}
+                        disabled={returningOrderId !== null}
+                      >
+                        {returningOrderId === order.id
+                          ? "Returning..."
+                          : "Return"}
+                      </button>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
     </section>
   );
 }

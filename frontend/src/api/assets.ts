@@ -1,3 +1,4 @@
+
 import { apiRequest } from "./client";
 
 export interface AssetCategory {
@@ -11,7 +12,9 @@ export interface Asset {
   name: string;
   manufacturer: string | null;
   price: number;
-  category: AssetCategory;
+  categoryId: number;
+  category: string;
+  subCategory: string;
 }
 
 export interface CreateAssetRequest {

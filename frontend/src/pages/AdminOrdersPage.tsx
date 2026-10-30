@@ -1,16 +1,19 @@
 
 import { useEffect, useState } from "react";
+
 import {
   approveOrder,
   getPendingOrders,
   rejectOrder,
-} from "../api/adminOrders";
+} from "../api/orders";
+
 import type { Order } from "../api/orders";
 
 function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [processingOrderId, setProcessingOrderId] = useState<number | null>(
     null
   );
@@ -24,18 +27,19 @@ function AdminOrdersPage() {
         setError(
           error instanceof Error
             ? error.message
-            : "Failed to load pending orders"
+            : "Failed to load pending orders."
         );
       } finally {
         setLoading(false);
       }
     }
 
-    loadPendingOrders();
+    void loadPendingOrders();
   }, []);
 
   async function handleApprove(orderId: number) {
     setError("");
+    setSuccess("");
     setProcessingOrderId(orderId);
 
     try {
@@ -44,11 +48,13 @@ function AdminOrdersPage() {
       setOrders((currentOrders) =>
         currentOrders.filter((order) => order.id !== orderId)
       );
+
+      setSuccess("Order approved successfully.");
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to approve order"
+          : "Failed to approve order."
       );
     } finally {
       setProcessingOrderId(null);
@@ -57,6 +63,7 @@ function AdminOrdersPage() {
 
   async function handleReject(orderId: number) {
     setError("");
+    setSuccess("");
     setProcessingOrderId(orderId);
 
     try {
@@ -65,11 +72,13 @@ function AdminOrdersPage() {
       setOrders((currentOrders) =>
         currentOrders.filter((order) => order.id !== orderId)
       );
+
+      setSuccess("Order rejected successfully.");
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to reject order"
+          : "Failed to reject order."
       );
     } finally {
       setProcessingOrderId(null);
@@ -80,13 +89,13 @@ function AdminOrdersPage() {
     return new Date(value).toLocaleString();
   }
 
-  if (loading) {
-    return <p>Loading pending orders...</p>;
-  }
-
   return (
     <section>
       <h2 className="page-title">Pending Orders</h2>
+
+      <p className="page-description">
+        Review student borrowing requests and approve or reject orders.
+      </p>
 
       {error && (
         <p className="error-message" role="alert">
@@ -94,66 +103,88 @@ function AdminOrdersPage() {
         </p>
       )}
 
-      {orders.length === 0 ? (
-        <p className="empty-message">
-          No pending orders.
+      {success && (
+        <p className="success-message" role="status">
+          {success}
         </p>
+      )}
+
+      {loading ? (
+        <p className="empty-message">
+          Loading pending orders...
+        </p>
+      ) : orders.length === 0 ? (
+        !error && (
+          <p className="empty-message">
+            No pending orders found.
+          </p>
+        )
       ) : (
-        <ul className="item-list">
-          {orders.map((order) => (
-            <li className="item" key={order.id}>
-              <h3 className="item-title">
-                {order.assetName}
-              </h3>
+        <div className="table-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Order ID</th>
+                <th scope="col">Student Name</th>
+                <th scope="col">Student Email</th>
+                <th scope="col">Asset Name</th>
+                <th scope="col">Requested On</th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
 
-              <p className="item-detail">
-                <strong>Order ID:</strong> {order.id}
-              </p>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order.id}>
+                  <td>#{order.id}</td>
 
-              <p className="item-detail">
-                <strong>User ID:</strong> {order.userId}
-              </p>
+                  <td>{order.userName}</td>
 
-              <p className="item-detail">
-                <strong>Asset ID:</strong> {order.assetId}
-              </p>
+                  <td>{order.userEmail}</td>
 
-              <p className="item-detail">
-                <strong>Status:</strong>{" "}
-                <span className="status">
-                  {order.status}
-                </span>
-              </p>
+                  <td>{order.assetName}</td>
 
-              <p className="item-detail">
-                <strong>Requested:</strong>{" "}
-                {formatDate(order.requestedAt)}
-              </p>
+                  <td>{formatDate(order.requestedAt)}</td>
 
-              <div className="item-actions">
-                <button
-                  className="primary-button"
-                  onClick={() => handleApprove(order.id)}
-                  disabled={processingOrderId === order.id}
-                >
-                  {processingOrderId === order.id
-                    ? "Processing..."
-                    : "Approve"}
-                </button>
+                  <td>
+                    <span
+                      className={`status status-${order.status.toLowerCase()}`}
+                    >
+                      {order.status}
+                    </span>
+                  </td>
 
-                <button
-                  className="danger-button"
-                  onClick={() => handleReject(order.id)}
-                  disabled={processingOrderId === order.id}
-                >
-                  {processingOrderId === order.id
-                    ? "Processing..."
-                    : "Reject"}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+                  <td>
+                    <div className="table-actions">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => handleApprove(order.id)}
+                        disabled={processingOrderId !== null}
+                      >
+                        {processingOrderId === order.id
+                          ? "Processing..."
+                          : "Approve"}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="danger-button"
+                        onClick={() => handleReject(order.id)}
+                        disabled={processingOrderId !== null}
+                      >
+                        {processingOrderId === order.id
+                          ? "Processing..."
+                          : "Reject"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

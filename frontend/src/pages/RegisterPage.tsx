@@ -1,6 +1,8 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
+
+import AuthLayout from "../components/AuthLayout";
 import { register } from "../api/auth";
 
 interface RegisterPageProps {
@@ -39,6 +41,8 @@ function RegisterPage({ onBackToLogin }: RegisterPageProps) {
         mobileNumber: mobileNumber.trim(),
       });
 
+      setPassword("");
+      setConfirmPassword("");
       setSuccess(true);
     } catch (error) {
       setError(
@@ -53,133 +57,155 @@ function RegisterPage({ onBackToLogin }: RegisterPageProps) {
 
   if (success) {
     return (
-      <main className="login-page">
-        <section className="login-panel">
-          <h1>Registration successful</h1>
+      <AuthLayout>
+        <h1>Registration successful</h1>
 
-          <p className="success-message" role="status">
-            Your account has been created and is waiting for
-            administrator approval.
-          </p>
+        <p className="success-message" role="status">
+          Your account has been created and is waiting for
+          administrator approval.
+        </p>
 
-          <p className="login-subtitle">
-            Once your account is approved, you can sign in.
-          </p>
+        <p className="auth-panel-description">
+          You can sign in once your account has been approved.
+        </p>
 
-          <button
-            type="button"
-            className="primary-button login-button"
-            onClick={onBackToLogin}
-          >
-            Back to sign in
-          </button>
-        </section>
-      </main>
+        <button
+          type="button"
+          className="primary-button login-button"
+          onClick={onBackToLogin}
+        >
+          Back to sign in
+        </button>
+      </AuthLayout>
     );
   }
 
   return (
-    <main className="login-page">
-      <section className="login-panel">
-        <h1>Create an account</h1>
+    <AuthLayout>
+      <h1>Create an account</h1>
 
-        <p className="login-subtitle">
-          Register to use Asset Management
-        </p>
+      <p className="auth-panel-description">
+        Complete the form below to register.
+        New accounts require administrator approval.
+      </p>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-field">
-            <label htmlFor="fullName">Full name</label>
-            <input
-              id="fullName"
-              type="text"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              autoComplete="name"
-              maxLength={100}
-              required
-            />
-          </div>
+      <form onSubmit={handleSubmit} className="login-form">
+        <div className="form-field">
+          <label htmlFor="fullName">Full name</label>
 
-          <div className="form-field">
-            <label htmlFor="registerEmail">Email</label>
-            <input
-              id="registerEmail"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              maxLength={255}
-              required
-            />
-          </div>
+          <input
+            id="fullName"
+            type="text"
+            placeholder="Enter your full name"
+            value={fullName}
+            onChange={(event) => setFullName(event.target.value)}
+            autoComplete="name"
+            maxLength={100}
+            required
+          />
+        </div>
 
-          <div className="form-field">
-            <label htmlFor="mobileNumber">Mobile number</label>
-            <input
-              id="mobileNumber"
-              type="tel"
-              value={mobileNumber}
-              onChange={(event) => setMobileNumber(event.target.value)}
-              autoComplete="tel"
-              maxLength={20}
-              required
-            />
-          </div>
+        <div className="form-field">
+          <label htmlFor="registerEmail">Email address</label>
 
-          <div className="form-field">
-            <label htmlFor="registerPassword">Password</label>
-            <input
-              id="registerPassword"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="new-password"
-              required
-            />
-          </div>
+          <input
+            id="registerEmail"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+            maxLength={255}
+            required
+          />
+        </div>
 
-          <div className="form-field">
-            <label htmlFor="confirmPassword">Confirm password</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(event) =>
-                setConfirmPassword(event.target.value)
-              }
-              autoComplete="new-password"
-              required
-            />
-          </div>
+        <div className="form-field">
+          <label htmlFor="mobileNumber">Mobile number</label>
 
-          {error && (
-            <p className="error-message" role="alert">
-              {error}
-            </p>
-          )}
+          <input
+            id="mobileNumber"
+            type="tel"
+            placeholder="Enter your mobile number"
+            value={mobileNumber}
+            onChange={(event) => setMobileNumber(event.target.value)}
+            autoComplete="tel"
+            maxLength={20}
+            required
+          />
+        </div>
 
-          <button
-            type="submit"
-            className="primary-button login-button"
-            disabled={loading}
+        <div className="form-field">
+          <label htmlFor="registerPassword">Password</label>
+
+          <input
+            id="registerPassword"
+            type="password"
+            placeholder="Create a password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="new-password"
+            aria-invalid={Boolean(error)}
+            aria-describedby={
+              error ? "register-error" : undefined
+            }
+            required
+          />
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="confirmPassword">
+            Confirm password
+          </label>
+
+          <input
+            id="confirmPassword"
+            type="password"
+            placeholder="Confirm your password"
+            value={confirmPassword}
+            onChange={(event) =>
+              setConfirmPassword(event.target.value)
+            }
+            autoComplete="new-password"
+            aria-invalid={Boolean(error)}
+            aria-describedby={
+              error ? "register-error" : undefined
+            }
+            required
+          />
+        </div>
+
+        {error && (
+          <p
+            id="register-error"
+            className="error-message"
+            role="alert"
           >
-            {loading ? "Creating account..." : "Register"}
-          </button>
-        </form>
+            {error}
+          </p>
+        )}
 
-        <p className="login-subtitle register-footer">
-          Already have an account?{" "}
-          <button
-            type="button"
-            className="text-button"
-            onClick={onBackToLogin}
-          >
-            Sign in
-          </button>
-        </p>
-      </section>
-    </main>
+        <button
+          type="submit"
+          className="primary-button login-button"
+          disabled={loading}
+        >
+          {loading ? "Creating account..." : "Create account"}
+        </button>
+      </form>
+
+      <p className="register-footer">
+        Already have an account?{" "}
+        <button
+          type="button"
+          className="text-button"
+          onClick={onBackToLogin}
+          disabled={loading}
+        >
+          Sign in
+        </button>
+      </p>
+    </AuthLayout>
   );
 }
 

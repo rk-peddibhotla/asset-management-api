@@ -3,7 +3,6 @@ package com.ravikanth.asset_management.user;
 
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -16,23 +15,24 @@ public class AdminUserController {
         this.userService = userService;
     }
 
+    // Get all registered users
+    @GetMapping
+    public List<AdminUserResponse> getAllUsers() {
+
+        return userService.getAllUsers()
+                .stream()
+                .map(AdminUserResponse::from)
+                .toList();
+    }
+
     // Get all users waiting for admin approval
     @GetMapping("/pending")
     public List<AdminUserResponse> getPendingUsers() {
 
-        // Get users from the service
-        List<User> users = userService.getPendingUsers();
-
-        // Create a list for the API responses
-        List<AdminUserResponse> responses = new ArrayList<>();
-
-        // Convert each User into an AdminUserResponse
-        for (User user : users) {
-            AdminUserResponse response = AdminUserResponse.from(user);
-            responses.add(response);
-        }
-
-        return responses;
+        return userService.getPendingUsers()
+                .stream()
+                .map(AdminUserResponse::from)
+                .toList();
     }
 
     // Approve a user
@@ -57,4 +57,3 @@ public class AdminUserController {
         return AdminUserResponse.from(user);
     }
 }
-
