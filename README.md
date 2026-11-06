@@ -1,565 +1,408 @@
 # Asset Management System
 
-A full-stack asset lending application for managing users, assets, categories, and borrowing workflows.
-
-The project is built with **Java, Spring Boot, PostgreSQL, React, and TypeScript**. It demonstrates backend engineering fundamentals including REST API design, JWT authentication, role-based authorization, validation, transactional business logic, database migrations, relational data modeling, and automated integration testing.
+A full-stack resource management and borrowing application built with **Java, Spring Boot, PostgreSQL, React, and TypeScript**. The application provides account management, resource cataloguing, borrowing workflows, configurable organization policies, and administrative controls.
 
 ## Features
 
-### Authentication and Users
+### Authentication and account management
 
-* Student registration
-* Password hashing with BCrypt
-* JWT-based authentication
-* Role-based authorization
-* Admin approval of new accounts
-* Admin account blocking
-* Protected user and administrative endpoints
+- User registration and login.
+- JWT-based stateless authentication.
+- Password hashing with BCrypt.
+- Role-based access control for users and administrators.
+- Configurable account approval.
+- Administrator controls for reviewing, approving, and blocking accounts.
 
-### Asset Management
+### Resource management
 
-* Asset category management
-* Asset creation and retrieval
-* Category and sub-category relationships
-* Database-level validation and constraints
-* Admin-only asset and category creation
+- Create and browse resource categories.
+- Create and browse resources.
+- Associate resources with categories.
+- Manage resource availability.
+- Prevent resources with active borrowings from being marked unavailable.
 
-### Asset Lending
+### Borrowing management
 
-* Borrowing requests
-* Maximum of 3 active orders per user
-* Admin approval and rejection
-* 10-day loan period
-* Asset returns
-* Automatic overdue fine calculation
-* User ownership checks
-* Order status management
+- Submit borrowing requests.
+- Support configurable borrowing approval.
+- Approve or reject pending requests as an administrator.
+- View personal borrowing records.
+- View and manage borrowing requests as an administrator.
+- Return borrowed resources.
+- Calculate late fees using overdue days and the applicable daily fee.
 
-### Engineering
+### Organization settings
 
-* Layered Controller → Service → Repository architecture
-* DTOs at the REST API boundary
-* Request validation
-* Global exception handling
-* PostgreSQL persistence
-* Flyway database migrations
-* Transactional service methods
-* Lazy JPA relationships
-* Targeted `JOIN FETCH` queries
-* Database constraints and indexes
-* Automated Spring integration tests
+Administrators can configure:
 
----
+- Organization name.
+- Resource label.
+- Maximum active borrowings per user.
+- Borrowing duration in days.
+- Daily late fee.
+- Whether borrowing approval is required.
+- Whether account approval is required.
+- Whether email notifications are enabled.
 
-## Tech Stack
+Settings are validated by the backend before being updated.
 
-### Backend
+### Email notifications
 
-* Java 21
-* Spring Boot 4
-* Spring Web MVC
-* Spring Security
-* JWT / OAuth2 Resource Server
-* Spring Data JPA
-* Hibernate
-* PostgreSQL
-* Flyway
-* Maven
+- Email notifications for supported account and borrowing workflows.
+- Mailpit integration for local email testing.
+- Email notification behavior can be configured through organization settings.
 
-### Frontend
+## Technology stack
 
-* React
-* TypeScript
-* Vite
-
-### Testing
-
-* JUnit
-* Spring Boot Test
-* MockMvc
-* Spring Security Test
-
----
+| Area | Technologies |
+|---|---|
+| Backend | Java 21, Spring Boot 4 |
+| API | Spring Web, REST |
+| Security | Spring Security, JWT, BCrypt |
+| Persistence | Spring Data JPA, Hibernate |
+| Database | PostgreSQL 18 |
+| Database migrations | Flyway |
+| Frontend | React, TypeScript |
+| Frontend tooling | Vite, npm |
+| Web server | Nginx |
+| Email testing | Mailpit |
+| Containerization | Docker, Docker Compose |
+| Testing | JUnit, Spring Boot Test, MockMvc, Mockito |
 
 ## Architecture
 
-The backend follows a simple layered architecture:
+The application is organized into a frontend, backend API, relational database, and email testing service.
 
 ```text
-HTTP Request
-     ↓
-Controller
-     ↓
-Service
-     ↓
-Repository
-     ↓
-PostgreSQL
+Browser
+   |
+   v
+React + TypeScript
+   |
+   v
+Nginx
+   |
+   |---- /       --> React application
+   |
+   |---- /api/*  --> Spring Boot backend
+                         |
+              +----------+----------+
+              |          |          |
+              v          v          v
+          PostgreSQL   Security   Mailpit
+                       (JWT)
 ```
 
-The main responsibilities are separated as follows:
+In the Docker setup, Nginx serves the frontend and forwards API requests to the backend. The backend communicates with PostgreSQL and Mailpit through the Docker network.
 
-* **Controller** — handles HTTP requests and API responses
-* **Service** — contains application and business logic
-* **Repository** — handles database access
-* **Entity** — represents persisted database data
-* **DTO** — defines data exchanged through the API
-* **Security configuration** — handles JWT authentication and authorization
-
-The project intentionally avoids unnecessary distributed-system complexity. The goal is to demonstrate solid backend engineering fundamentals in a maintainable application.
-
----
-
-## Project Structure
+## Project structure
 
 ```text
 asset-management-api/
-│
-├── src/
-│   ├── main/
-│   │   ├── java/com/ravikanth/asset_management/
-│   │   │
-│   │   ├── auth/
-│   │   │   ├── AuthController
-│   │   │   ├── AuthService
-│   │   │   ├── JwtService
-│   │   │   └── request/response DTOs
-│   │   │
-│   │   ├── user/
-│   │   │   ├── User
-│   │   │   ├── UserRepository
-│   │   │   ├── UserService
-│   │   │   ├── AdminUserController
-│   │   │   └── UserController
-│   │   │
-│   │   ├── asset/
-│   │   │   ├── Asset
-│   │   │   ├── AssetCategory
-│   │   │   ├── AssetRepository
-│   │   │   ├── AssetCategoryRepository
-│   │   │   ├── AssetService
-│   │   │   ├── AssetCategoryService
-│   │   │   └── controllers/DTOs
-│   │   │
-│   │   ├── order/
-│   │   │   ├── Order
-│   │   │   ├── OrderStatus
-│   │   │   ├── OrderRepository
-│   │   │   ├── OrderService
-│   │   │   ├── OrderController
-│   │   │   └── DTOs
-│   │   │
-│   │   ├── config/
-│   │   │   ├── SecurityConfig
-│   │   │   ├── JwtConfig
-│   │   │   └── PasswordConfig
-│   │   │
-│   │   └── common/
-│   │       └── GlobalExceptionHandler
-│   │
-│   ├── main/resources/
-│   │   ├── db/migration/
-│   │   └── application.yml
-│   │
-│   └── test/
-│       └── java/
-│
-├── frontend/
-│   ├── src/
-│   ├── package.json
-│   └── vite.config.ts
-│
-├── pom.xml
-└── README.md
+|
++-- src/
+|   +-- main/
+|   |   +-- java/com/ravikanth/asset_management/
+|   |   |   +-- auth/
+|   |   |   +-- borrowing/
+|   |   |   +-- common/
+|   |   |   +-- config/
+|   |   |   +-- organization/
+|   |   |   +-- resource/
+|   |   |   +-- security/
+|   |   |   +-- user/
+|   |   |
+|   |   +-- resources/
+|   |       +-- db/migration/
+|   |       +-- application.yaml
+|   |
+|   +-- test/
+|       +-- java/com/ravikanth/asset_management/
+|       +-- resources/
+|
++-- frontend/
+|   +-- src/
+|   |   +-- api/
+|   |   +-- assets/
+|   |   +-- auth/
+|   |   +-- components/
+|   |   +-- pages/
+|   +-- Dockerfile
+|   +-- nginx.conf
+|   +-- package.json
+|
++-- Dockerfile
++-- docker-compose.yml
++-- .dockerignore
++-- .env.example
++-- .gitignore
++-- mvnw
++-- mvnw.cmd
++-- pom.xml
++-- README.md
 ```
 
----
-
-## Authentication
-
-Users register through:
-
-```text
-POST /api/auth/register
-```
-
-New student accounts start with:
-
-```text
-UNAPPROVED
-```
-
-An administrator can approve the account.
-
-Once approved, the user can authenticate through:
-
-```text
-POST /api/auth/login
-```
-
-The API returns a signed JWT containing the user's identity and role.
-
-Protected requests use:
-
-```text
-Authorization: Bearer <token>
-```
-
-Administrative endpoints require the `ADMIN` role.
-
-Passwords are never stored as plaintext. They are encoded using BCrypt before being persisted.
-
----
-
-## Order Lifecycle
-
-Orders follow a simple workflow:
-
-```text
-PENDING
-   │
-   ├──→ ACTIVE ──→ RETURNED
-   │
-   └──→ REJECTED
-```
-
-When an administrator approves a pending order:
-
-1. The order becomes `ACTIVE`
-2. The approval timestamp is recorded
-3. A 10-day due date is assigned
-
-When an active order is returned after the due date, the API calculates an overdue fine.
-
-Current fine:
-
-```text
-₹50 per overdue day
-```
-
-A user can only return an order that belongs to them.
-
----
-
-## API Endpoints
-
-### Authentication
-
-| Method | Endpoint             | Description                    |
-| ------ | -------------------- | ------------------------------ |
-| POST   | `/api/auth/register` | Register a student             |
-| POST   | `/api/auth/login`    | Authenticate and receive a JWT |
-
-### Users — Admin
-
-| Method | Endpoint                            | Description        |
-| ------ | ----------------------------------- | ------------------ |
-| GET    | `/api/admin/users/pending`          | View pending users |
-| PATCH  | `/api/admin/users/{userId}/approve` | Approve a user     |
-| PATCH  | `/api/admin/users/{userId}/block`   | Block a user       |
-
-### Users
-
-| Method | Endpoint        | Description                           |
-| ------ | --------------- | ------------------------------------- |
-| GET    | `/api/users/me` | Get the authenticated user's identity |
-
-### Categories
-
-| Method | Endpoint          | Description       |
-| ------ | ----------------- | ----------------- |
-| POST   | `/api/categories` | Create a category |
-| GET    | `/api/categories` | List categories   |
-
-Creating categories requires the `ADMIN` role.
-
-### Assets
-
-| Method | Endpoint      | Description     |
-| ------ | ------------- | --------------- |
-| POST   | `/api/assets` | Create an asset |
-| GET    | `/api/assets` | List assets     |
-
-Creating assets requires the `ADMIN` role.
-
-### Orders
-
-| Method | Endpoint                       | Description                          |
-| ------ | ------------------------------ | ------------------------------------ |
-| POST   | `/api/orders`                  | Create a borrowing request           |
-| GET    | `/api/orders/my`               | View the authenticated user's orders |
-| PATCH  | `/api/orders/{orderId}/return` | Return an active order               |
-
-### Orders — Admin
-
-| Method | Endpoint                              | Description         |
-| ------ | ------------------------------------- | ------------------- |
-| GET    | `/api/admin/orders/pending`           | View pending orders |
-| PATCH  | `/api/admin/orders/{orderId}/approve` | Approve an order    |
-| PATCH  | `/api/admin/orders/{orderId}/reject`  | Reject an order     |
-
----
-
-## Database
-
-The application uses PostgreSQL.
-
-Main tables:
-
-```text
-users
-asset_categories
-assets
-orders
-flyway_schema_history
-```
-
-Relationships:
-
-```text
-User
-  │
-  └── 1-to-many ── Order
-
-Asset
-  │
-  └── 1-to-many ── Order
-
-AssetCategory
-  │
-  └── 1-to-many ── Asset
-```
-
-Database schema changes are managed through Flyway migrations.
-
-The schema also includes:
-
-* Foreign-key constraints
-* Unique constraints
-* Check constraints
-* Indexes for commonly queried columns
-
----
-
-## Local Setup
+## Getting started with Docker
 
 ### Prerequisites
 
 Install:
 
-* Java 21
-* PostgreSQL
-* Git
-* Node.js 22+ for the frontend
+- Docker Desktop with Docker Compose.
+- Git.
 
-### Create the Database
+### 1. Clone the repository
 
-Create a PostgreSQL database:
-
-```sql
-CREATE DATABASE asset_management;
+```bash
+git clone https://github.com/rk-peddibhotla/asset-management-api.git
+cd asset-management-api
 ```
 
-The application uses Flyway to create and validate the required tables when it starts.
+### 2. Configure environment variables
 
-### Configuration
+Copy the example environment file.
 
-The backend supports environment variables for database and JWT configuration.
+**PowerShell**
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Update `.env` with your local database credentials and a sufficiently long, randomly generated JWT secret.
 
 Example:
 
-```text
-DB_URL=jdbc:postgresql://localhost:5432/asset_management
+```dotenv
 DB_USERNAME=postgres
-DB_PASSWORD=<your-password>
-JWT_SECRET=<your-development-secret>
-SERVER_PORT=8080
+DB_PASSWORD=your_database_password
+JWT_SECRET=replace_with_a_long_random_secret
 ```
 
-For local development, the application also provides development defaults through `application.yml`.
+The other variables in `.env.example` provide the local application and email configuration used outside the Docker Compose overrides.
 
-For production deployments, provide the configuration through environment variables rather than committing credentials or secrets to source control.
+Do not commit `.env` or put real credentials in `.env.example`.
 
----
+### 3. Build and start the application
 
-## Run the Backend
+```bash
+docker compose up --build
+```
 
-From the project root:
+Docker Compose starts:
 
-### Windows
+- PostgreSQL
+- Mailpit
+- Spring Boot backend
+- React frontend served through Nginx
+
+The backend waits for PostgreSQL's health check before starting.
+
+### 4. Access the application
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:8080 |
+| Mailpit inbox | http://localhost:8025 |
+
+Mailpit captures outgoing application emails locally. No external email account is required for the Docker Compose setup.
+
+### 5. Stop the application
+
+```bash
+docker compose down
+```
+
+The PostgreSQL data volume is retained when the containers are stopped this way.
+
+To remove the containers and database volume:
+
+```bash
+docker compose down -v
+```
+
+**Warning:** Removing the volume deletes the PostgreSQL data stored by this Compose project.
+
+## Running locally without Docker
+
+For local development outside Docker, install:
+
+- Java 21
+- PostgreSQL 18
+- Node.js 22
+- npm
+
+Create the PostgreSQL database and configure the backend environment variables using the settings in `.env.example`.
+
+Start the backend from the project root.
+
+**PowerShell**
 
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-The API runs on:
-
-```text
-http://localhost:8080
-```
-
----
-
-## Run the Frontend
-
-From the `frontend` directory:
+Start the frontend from the `frontend` directory:
 
 ```powershell
-npm install
+npm ci
 npm run dev
 ```
 
-The frontend development server runs on:
+Vite is configured to proxy `/api` requests to `http://localhost:8080` during local development. Ensure the backend is running before using the frontend.
+
+## API reference
+
+All endpoints use the `/api` base path.
+
+### Authentication
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register an account |
+| POST | `/api/auth/login` | Authenticate and obtain a JWT |
+
+### Users
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/users/me` | Retrieve the authenticated user's details |
+
+### Resources and categories
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/resource-categories` | Create a resource category |
+| GET | `/api/resource-categories` | List resource categories |
+| POST | `/api/resources` | Create a resource |
+| GET | `/api/resources` | List resources |
+| PATCH | `/api/resources/{id}/availability` | Update resource availability |
+
+### Borrowings
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/borrowings` | Submit a borrowing request |
+| GET | `/api/borrowings/my` | List the current user's borrowings |
+| PATCH | `/api/borrowings/{borrowingId}/return` | Return a borrowed resource |
+
+### Administrator borrowing operations
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/admin/borrowings/pending` | List pending borrowing requests |
+| GET | `/api/admin/borrowings` | List borrowing records |
+| PATCH | `/api/admin/borrowings/{borrowingId}/approve` | Approve a pending request |
+| PATCH | `/api/admin/borrowings/{borrowingId}/reject` | Reject a pending request |
+
+### Administrator user operations
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/admin/users` | List users |
+| GET | `/api/admin/users/pending` | List accounts awaiting approval |
+| PATCH | `/api/admin/users/{userId}/approve` | Approve a user account |
+| PATCH | `/api/admin/users/{userId}/block` | Block a user account |
+
+### Organization settings
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/organization-settings` | Retrieve organization settings |
+| PUT | `/api/organization-settings` | Update organization settings |
+
+### Administrator dashboard
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/admin/dashboard` | Retrieve dashboard information |
+
+Protected endpoints require authentication. Administrator operations require the appropriate administrator role.
+
+## Business rules
+
+The application uses organization settings to control borrowing behavior rather than relying on fixed borrowing limits and fees.
+
+### Borrowing workflow
+
+1. An authenticated user submits a borrowing request.
+2. The backend verifies that the user's account is active and the resource is available.
+3. If borrowing approval is required, the request remains pending.
+4. Otherwise, the borrowing is activated immediately, subject to the configured borrowing limit.
+5. An administrator can approve or reject pending requests.
+6. Approved borrowings receive a due date based on the borrowing duration.
+7. The user can return an active borrowing.
+8. Late fees are calculated using the applicable daily fee and overdue calendar days.
+
+### Borrowing policy snapshots
+
+The daily late fee and borrowing duration are captured when a borrowing request is created.
+
+This preserves the original policy applicable to that request, even if an administrator changes organization settings before the request is approved or returned.
+
+Pending requests do not consume an active borrowing slot. The active borrowing limit is checked when a borrowing is activated.
+
+## Database migrations
+
+Flyway manages database schema changes.
+
+Migration files are located at:
 
 ```text
-http://localhost:5173
+src/main/resources/db/migration/
 ```
 
-The frontend communicates with the Spring Boot REST API using JWT authentication.
+The application uses versioned SQL migrations to evolve the database schema.
 
----
+Hibernate is configured to validate the schema rather than automatically modify it.
 
-## Run Tests
+## Testing
 
-From the project root:
+The backend test suite uses JUnit, Spring Boot Test, MockMvc, and Mockito.
+
+Run the backend tests from the project root.
+
+**PowerShell**
 
 ```powershell
-.\mvnw.cmd clean test
+.\mvnw.cmd test
 ```
 
-The test suite covers:
+The test configuration connects to a separate PostgreSQL database. Ensure this database is available before running the suite. Never configure tests to use your development or production database.
 
-* User registration
-* Password hashing
-* Login
-* JWT authentication
-* Account approval
-* Account blocking
-* Role-based authorization
-* Asset creation
-* Asset retrieval
-* Category creation
-* Category retrieval
-* Duplicate category handling
-* Order creation
-* Order approval
-* Order rejection
-* Order ownership
-* Order returns
-* Overdue fine calculation
-* Authentication failures
-* Authorization failures
-* Database persistence
+The complete backend test suite has passed **63 tests**, with zero failures, errors, or skipped tests in the latest verified run.
 
-The complete backend test suite currently passes.
+The frontend can be checked and built from the `frontend` directory:
 
----
-
-## Example Workflow
-
-A typical lending workflow is:
-
-```text
-1. Student registers
-          ↓
-2. Account starts as UNAPPROVED
-          ↓
-3. Admin approves account
-          ↓
-4. Student logs in
-          ↓
-5. Student creates borrowing request
-          ↓
-6. Order starts as PENDING
-          ↓
-7. Admin approves the order
-          ↓
-8. Order becomes ACTIVE
-          ↓
-9. Student returns the asset
-          ↓
-10. Order becomes RETURNED
-          ↓
-11. Overdue fine is calculated when applicable
+```bash
+npm ci
+npm run lint
+npm run build
 ```
 
----
+## Security and configuration
 
-## Engineering Considerations
+- Passwords are hashed using BCrypt.
+- Authentication uses JWT tokens.
+- Backend authorization is enforced through Spring Security.
+- Database credentials and JWT secrets are supplied through environment variables.
+- `.env` is excluded from version control.
+- Docker uses a separate runtime image for the backend and frontend.
+- PostgreSQL data is stored in a named Docker volume.
+- Mailpit is used for local email testing.
 
-The project intentionally keeps the architecture simple while addressing common backend engineering concerns.
+## Future improvements
 
-### Authentication and Authorization
+Potential areas for further development include:
 
-* Authentication identity is taken from the JWT rather than trusted from request parameters.
-* Administrative operations are protected using role-based authorization.
-* Passwords are stored as BCrypt hashes.
-* JWT authentication is stateless.
+- Additional integration and frontend tests.
+- More comprehensive API documentation.
+- Production deployment and monitoring.
+- Improved observability and application logging.
+- Additional administrative reporting and audit capabilities.
 
-### Persistence
+## Author
 
-* JPA relationships use lazy loading by default.
-* `open-in-view` is disabled.
-* Targeted `JOIN FETCH` queries load related entities when required by API responses.
-* Database constraints enforce important data integrity rules.
-* Indexes support frequently queried relationships and statuses.
+**Ravi Kanth Peddibhotla**
 
-### API Design
-
-* DTOs are used at the API boundary.
-* Persistence entities are not directly exposed as REST responses.
-* Request validation is handled using Jakarta Validation.
-* Common application errors are handled through a global exception handler.
-
-### Business Logic
-
-* Business operations are implemented in transactional service methods.
-* Order ownership is checked before returns.
-* Active-order limits are enforced.
-* Loan due dates and overdue fines are calculated by the backend.
-
-### Database Versioning
-
-* Database schema changes are version-controlled through Flyway migrations.
-* Hibernate uses `ddl-auto: validate`, allowing the application to verify that the entity model matches the migration-managed schema.
-
-### Testing
-
-The project uses Spring integration tests with MockMvc to verify API behavior, persistence, authentication, authorization, and important business rules together.
-
----
-
-## Frontend
-
-A React and TypeScript frontend provides the user-facing client for the API.
-
-Current functionality includes:
-
-* Student login
-* Asset browsing
-* Borrowing requests
-* My Orders
-* Asset returns
-* Fine display
-* Admin login
-* Pending user management
-* User approval/blocking
-* Pending order management
-* Order approval/rejection
-* Logout
-
-The frontend is intentionally kept separate from the Spring Boot backend so the REST API can also be consumed by other clients.
-
----
-
-## Project Status
-
-**Backend:** Complete and tested
-
-**Frontend:** Implemented and tested
-
-**Database:** PostgreSQL + Flyway
-
-**Authentication:** JWT + RBAC
-
-**Testing:** Automated integration/security tests passing
+GitHub: https://github.com/rk-peddibhotla

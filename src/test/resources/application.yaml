@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: asset-management-api
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/asset_management_test_run
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+
+  flyway:
+    enabled: true
+    clean-disabled: true
+    url: jdbc:postgresql://localhost:5432/asset_management_test_run
+    user: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  mail:
+    host: localhost
+    port: 1025
+    username: test@example.com
+    password: test
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+server:
+  port: 8080
+
+jwt:
+  secret: test-only-secret-key-that-is-long-enough-for-hmac-sha256

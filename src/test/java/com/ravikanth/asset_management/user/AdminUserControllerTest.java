@@ -1,6 +1,8 @@
 
 package com.ravikanth.asset_management.user;
 
+import com.ravikanth.asset_management.organization.OrganizationSettings;
+import com.ravikanth.asset_management.organization.OrganizationSettingsRepository;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +30,10 @@ class AdminUserControllerTest {
     private UserRepository userRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
+    private OrganizationSettingsRepository settingsRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // ---------------------------------------------------------
     // Get pending users
@@ -60,19 +64,17 @@ class AdminUserControllerTest {
         ).value("UNAPPROVED"));
     }
 
-
     @Test
-    void student_shouldNotGetPendingUsers() throws Exception {
+    void user_shouldNotGetPendingUsers() throws Exception {
 
-        User student = createActiveStudent();
+        User user = createActiveUser();
 
         mockMvc.perform(
                 get("/api/admin/users/pending")
-                        .with(studentJwt(student))
+                        .with(userJwt(user))
         )
         .andExpect(status().isForbidden());
     }
-
 
     @Test
     void unauthenticatedUser_shouldNotGetPendingUsers()
@@ -83,7 +85,6 @@ class AdminUserControllerTest {
         )
         .andExpect(status().isUnauthorized());
     }
-
 
     // ---------------------------------------------------------
     // Approve users
@@ -120,18 +121,17 @@ class AdminUserControllerTest {
         );
     }
 
-
     @Test
     void admin_shouldNotApproveAlreadyActiveUser()
             throws Exception {
 
-        User student = createActiveStudent();
+        User user = createActiveUser();
         User admin = createAdmin();
 
         mockMvc.perform(
                 patch(
                         "/api/admin/users/{userId}/approve",
-                        student.getId()
+                        user.getId()
                 )
                 .with(adminJwt(admin))
         )
@@ -142,11 +142,29 @@ class AdminUserControllerTest {
                 .value("Only unapproved users can be approved"));
     }
 
+    @Test
+    void disablingAccountApproval_shouldNotApproveExistingPendingUsers()
+            throws Exception {
+
+        User pendingUser = createPendingUser();
+
+        withAccountApprovalSetting(false, () -> {
+
+            User savedUser = userRepository
+                    .findById(pendingUser.getId())
+                    .orElseThrow();
+
+            assertEquals(
+                    AccountStatus.UNAPPROVED,
+                    savedUser.getAccountStatus()
+            );
+        });
+    }
 
     @Test
-    void student_shouldNotApproveUser() throws Exception {
+    void user_shouldNotApproveAnotherUser() throws Exception {
 
-        User student = createActiveStudent();
+        User user = createActiveUser();
         User pendingUser = createPendingUser();
 
         mockMvc.perform(
@@ -154,11 +172,10 @@ class AdminUserControllerTest {
                         "/api/admin/users/{userId}/approve",
                         pendingUser.getId()
                 )
-                .with(studentJwt(student))
+                .with(userJwt(user))
         )
         .andExpect(status().isForbidden());
     }
-
 
     @Test
     void admin_shouldReturnBadRequestForMissingUser()
@@ -180,7 +197,6 @@ class AdminUserControllerTest {
                 .value("User not found"));
     }
 
-
     // ---------------------------------------------------------
     // Block users
     // ---------------------------------------------------------
@@ -188,26 +204,26 @@ class AdminUserControllerTest {
     @Test
     void admin_shouldBlockActiveUser() throws Exception {
 
-        User student = createActiveStudent();
+        User user = createActiveUser();
         User admin = createAdmin();
 
         mockMvc.perform(
                 patch(
                         "/api/admin/users/{userId}/block",
-                        student.getId()
+                        user.getId()
                 )
                 .with(adminJwt(admin))
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id")
-                .value(student.getId()))
+                .value(user.getId()))
         .andExpect(jsonPath("$.email")
-                .value(student.getEmail()))
+                .value(user.getEmail()))
         .andExpect(jsonPath("$.accountStatus")
                 .value("BLOCKED"));
 
         User blockedUser =
-                userRepository.findById(student.getId())
+                userRepository.findById(user.getId())
                         .orElseThrow();
 
         assertEquals(
@@ -215,7 +231,6 @@ class AdminUserControllerTest {
                 blockedUser.getAccountStatus()
         );
     }
-
 
     @Test
     void admin_shouldNotBlockAlreadyBlockedUser()
@@ -238,23 +253,21 @@ class AdminUserControllerTest {
                 .value("User is already blocked"));
     }
 
-
     @Test
-    void student_shouldNotBlockUser() throws Exception {
+    void user_shouldNotBlockAnotherUser() throws Exception {
 
-        User student = createActiveStudent();
-        User anotherStudent = createActiveStudent();
+        User user = createActiveUser();
+        User anotherUser = createActiveUser();
 
         mockMvc.perform(
                 patch(
                         "/api/admin/users/{userId}/block",
-                        anotherStudent.getId()
+                        anotherUser.getId()
                 )
-                .with(studentJwt(student))
+                .with(userJwt(user))
         )
         .andExpect(status().isForbidden());
     }
-
 
     // ---------------------------------------------------------
     // JWT helper methods
@@ -273,20 +286,18 @@ class AdminUserControllerTest {
                 );
     }
 
-
-    private JwtRequestPostProcessor studentJwt(User student) {
+    private JwtRequestPostProcessor userJwt(User user) {
 
         return jwt()
                 .jwt(jwt -> jwt
-                        .subject(student.getId().toString())
-                        .claim("email", student.getEmail())
-                        .claim("role", "STUDENT")
+                        .subject(user.getId().toString())
+                        .claim("email", user.getEmail())
+                        .claim("role", "USER")
                 )
                 .authorities(
-                        new SimpleGrantedAuthority("ROLE_STUDENT")
+                        new SimpleGrantedAuthority("ROLE_USER")
                 );
     }
-
 
     // ---------------------------------------------------------
     // Test user creation methods
@@ -294,89 +305,59 @@ class AdminUserControllerTest {
 
     private User createPendingUser() {
 
-        User user = new User();
-
-        user.setFullName(
-                "Pending User " + System.nanoTime()
+        return createUser(
+                "Pending User",
+                "pending-",
+                AccountStatus.UNAPPROVED,
+                UserRole.USER
         );
-
-        user.setEmail(
-                "pending-" + System.nanoTime()
-                        + "@example.com"
-        );
-
-        user.setPasswordHash(
-                passwordEncoder.encode("password123")
-        );
-
-        user.setMobileNumber("9876543210");
-        user.setRole(UserRole.STUDENT);
-        user.setAccountStatus(AccountStatus.UNAPPROVED);
-
-        return userRepository.save(user);
     }
 
+    private User createActiveUser() {
 
-    private User createActiveStudent() {
-
-        User user = new User();
-
-        user.setFullName(
-                "Active Student " + System.nanoTime()
+        return createUser(
+                "Active User",
+                "active-",
+                AccountStatus.ACTIVE,
+                UserRole.USER
         );
-
-        user.setEmail(
-                "active-" + System.nanoTime()
-                        + "@example.com"
-        );
-
-        user.setPasswordHash(
-                passwordEncoder.encode("password123")
-        );
-
-        user.setMobileNumber("9876543210");
-        user.setRole(UserRole.STUDENT);
-        user.setAccountStatus(AccountStatus.ACTIVE);
-
-        return userRepository.save(user);
     }
-
 
     private User createBlockedUser() {
 
-        User user = new User();
-
-        user.setFullName(
-                "Blocked User " + System.nanoTime()
+        return createUser(
+                "Blocked User",
+                "blocked-",
+                AccountStatus.BLOCKED,
+                UserRole.USER
         );
-
-        user.setEmail(
-                "blocked-" + System.nanoTime()
-                        + "@example.com"
-        );
-
-        user.setPasswordHash(
-                passwordEncoder.encode("password123")
-        );
-
-        user.setMobileNumber("9876543210");
-        user.setRole(UserRole.STUDENT);
-        user.setAccountStatus(AccountStatus.BLOCKED);
-
-        return userRepository.save(user);
     }
-
 
     private User createAdmin() {
 
+        return createUser(
+                "Test Admin",
+                "admin-",
+                AccountStatus.ACTIVE,
+                UserRole.ADMIN
+        );
+    }
+
+    private User createUser(
+            String fullNamePrefix,
+            String emailPrefix,
+            AccountStatus accountStatus,
+            UserRole role
+    ) {
+
         User user = new User();
 
         user.setFullName(
-                "Test Admin " + System.nanoTime()
+                fullNamePrefix + " " + System.nanoTime()
         );
 
         user.setEmail(
-                "admin-" + System.nanoTime()
+                emailPrefix + System.nanoTime()
                         + "@example.com"
         );
 
@@ -385,10 +366,42 @@ class AdminUserControllerTest {
         );
 
         user.setMobileNumber("9876543210");
-        user.setRole(UserRole.ADMIN);
-        user.setAccountStatus(AccountStatus.ACTIVE);
+        user.setRole(role);
+        user.setAccountStatus(accountStatus);
 
         return userRepository.save(user);
     }
-}
 
+    // ---------------------------------------------------------
+    // Organization settings helper
+    // ---------------------------------------------------------
+
+    private void withAccountApprovalSetting(
+            boolean required,
+            ThrowingRunnable action
+    ) throws Exception {
+
+        OrganizationSettings settings = settingsRepository
+                .findById((short) 1)
+                .orElseThrow();
+
+        boolean originalValue =
+                settings.isAccountApprovalRequired();
+
+        try {
+            settings.setAccountApprovalRequired(required);
+            settingsRepository.saveAndFlush(settings);
+
+            action.run();
+
+        } finally {
+            settings.setAccountApprovalRequired(originalValue);
+            settingsRepository.saveAndFlush(settings);
+        }
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Exception;
+    }
+}

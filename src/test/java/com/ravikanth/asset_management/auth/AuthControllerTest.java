@@ -1,6 +1,8 @@
 
 package com.ravikanth.asset_management.auth;
 
+import com.ravikanth.asset_management.organization.OrganizationSettings;
+import com.ravikanth.asset_management.organization.OrganizationSettingsRepository;
 import com.ravikanth.asset_management.user.AccountStatus;
 import com.ravikanth.asset_management.user.User;
 import com.ravikanth.asset_management.user.UserRepository;
@@ -15,14 +17,14 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -35,70 +37,113 @@ class AuthControllerTest {
     private UserRepository userRepository;
 
     @Autowired
+    private OrganizationSettingsRepository settingsRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Test
-    void registerUser_shouldCreateUnapprovedStudent() throws Exception {
+    void registerUser_whenApprovalRequired_shouldCreateUnapprovedUser()
+            throws Exception {
 
-        String email = "test-" + System.nanoTime() + "@example.com";
-        String rawPassword = "password123";
+        withAccountApprovalSetting(true, () -> {
 
-        mockMvc.perform(
-                post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "fullName": "Test User",
-                                    "email": "%s",
-                                    "password": "%s",
-                                    "mobileNumber": "9876543210"
-                                }
-                                """.formatted(email, rawPassword))
-        )
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.fullName").value("Test User"))
-        .andExpect(jsonPath("$.email").value(email))
-        .andExpect(jsonPath("$.mobileNumber").value("9876543210"))
-        .andExpect(jsonPath("$.role").value("STUDENT"))
-        .andExpect(jsonPath("$.accountStatus").value("UNAPPROVED"))
-        .andExpect(jsonPath("$.password").doesNotExist())
-        .andExpect(jsonPath("$.passwordHash").doesNotExist());
+            String email =
+                    "register-pending-" + System.nanoTime()
+                            + "@example.com";
 
-        User savedUser = userRepository.findByEmail(email)
-                .orElseThrow();
+            String rawPassword = "password123";
 
-        assertNotNull(savedUser.getPasswordHash());
+            mockMvc.perform(
+                    post("/api/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                        "fullName": "Test User",
+                                        "email": "%s",
+                                        "password": "%s",
+                                        "mobileNumber": "9876543210"
+                                    }
+                                    """.formatted(email, rawPassword))
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.fullName").value("Test User"))
+            .andExpect(jsonPath("$.email").value(email))
+            .andExpect(jsonPath("$.mobileNumber").value("9876543210"))
+            .andExpect(jsonPath("$.role").value("USER"))
+            .andExpect(jsonPath("$.accountStatus").value("UNAPPROVED"))
+            .andExpect(jsonPath("$.password").doesNotExist())
+            .andExpect(jsonPath("$.passwordHash").doesNotExist());
 
-        assertFalse(
-                savedUser.getPasswordHash().equals(rawPassword)
-        );
+            User savedUser = userRepository.findByEmail(email)
+                    .orElseThrow();
 
-        assertTrue(
-                passwordEncoder.matches(
-                        rawPassword,
-                        savedUser.getPasswordHash()
-                )
-        );
+            assertNotNull(savedUser.getPasswordHash());
+            assertFalse(savedUser.getPasswordHash().equals(rawPassword));
+
+            assertTrue(
+                    passwordEncoder.matches(
+                            rawPassword,
+                            savedUser.getPasswordHash()
+                    )
+            );
+        });
+    }
+
+    @Test
+    void registerUser_whenApprovalNotRequired_shouldCreateActiveUser()
+            throws Exception {
+
+        withAccountApprovalSetting(false, () -> {
+
+            String email =
+                    "register-active-" + System.nanoTime()
+                            + "@example.com";
+
+            mockMvc.perform(
+                    post("/api/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                        "fullName": "Active Test User",
+                                        "email": "%s",
+                                        "password": "password123",
+                                        "mobileNumber": "9876543210"
+                                    }
+                                    """.formatted(email))
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.email").value(email))
+            .andExpect(jsonPath("$.role").value("USER"))
+            .andExpect(jsonPath("$.accountStatus").value("ACTIVE"));
+
+            User savedUser = userRepository.findByEmail(email)
+                    .orElseThrow();
+
+            assertTrue(
+                    passwordEncoder.matches(
+                            "password123",
+                            savedUser.getPasswordHash()
+                    )
+            );
+        });
     }
 
     @Test
     void loginUser_shouldReturnJwtForActiveUser() throws Exception {
 
-        String email = "login-" + System.nanoTime() + "@example.com";
+        String email =
+                "login-" + System.nanoTime() + "@example.com";
+
         String rawPassword = "password123";
 
-        User user = new User();
-
-        user.setFullName("Login Test User");
-        user.setEmail(email);
-        user.setPasswordHash(
-                passwordEncoder.encode(rawPassword)
+        User user = createUser(
+                "Login Test User",
+                email,
+                rawPassword,
+                UserRole.USER,
+                AccountStatus.ACTIVE
         );
-        user.setMobileNumber("9876543210");
-        user.setRole(UserRole.STUDENT);
-        user.setAccountStatus(AccountStatus.ACTIVE);
-
-        userRepository.save(user);
 
         mockMvc.perform(
                 post("/api/auth/login")
@@ -115,7 +160,7 @@ class AuthControllerTest {
         .andExpect(jsonPath("$.tokenType").value("Bearer"))
         .andExpect(jsonPath("$.userId").value(user.getId()))
         .andExpect(jsonPath("$.email").value(email))
-        .andExpect(jsonPath("$.role").value("STUDENT"));
+        .andExpect(jsonPath("$.role").value("USER"));
     }
 
     @Test
@@ -125,20 +170,13 @@ class AuthControllerTest {
                 "unapproved-login-" + System.nanoTime()
                         + "@example.com";
 
-        String rawPassword = "password123";
-
-        User user = new User();
-
-        user.setFullName("Unapproved User");
-        user.setEmail(email);
-        user.setPasswordHash(
-                passwordEncoder.encode(rawPassword)
+        createUser(
+                "Unapproved User",
+                email,
+                "password123",
+                UserRole.USER,
+                AccountStatus.UNAPPROVED
         );
-        user.setMobileNumber("9876543210");
-        user.setRole(UserRole.STUDENT);
-        user.setAccountStatus(AccountStatus.UNAPPROVED);
-
-        userRepository.save(user);
 
         mockMvc.perform(
                 post("/api/auth/login")
@@ -146,9 +184,9 @@ class AuthControllerTest {
                         .content("""
                                 {
                                     "email": "%s",
-                                    "password": "%s"
+                                    "password": "password123"
                                 }
-                                """.formatted(email, rawPassword))
+                                """.formatted(email))
         )
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.status").value(400))
@@ -161,22 +199,16 @@ class AuthControllerTest {
     void loginUser_shouldRejectBlockedUser() throws Exception {
 
         String email =
-                "blocked-login-" + System.nanoTime() + "@example.com";
+                "blocked-login-" + System.nanoTime()
+                        + "@example.com";
 
-        String rawPassword = "password123";
-
-        User user = new User();
-
-        user.setFullName("Blocked User");
-        user.setEmail(email);
-        user.setPasswordHash(
-                passwordEncoder.encode(rawPassword)
+        createUser(
+                "Blocked User",
+                email,
+                "password123",
+                UserRole.USER,
+                AccountStatus.BLOCKED
         );
-        user.setMobileNumber("9876543210");
-        user.setRole(UserRole.STUDENT);
-        user.setAccountStatus(AccountStatus.BLOCKED);
-
-        userRepository.save(user);
 
         mockMvc.perform(
                 post("/api/auth/login")
@@ -184,9 +216,9 @@ class AuthControllerTest {
                         .content("""
                                 {
                                     "email": "%s",
-                                    "password": "%s"
+                                    "password": "password123"
                                 }
-                                """.formatted(email, rawPassword))
+                                """.formatted(email))
         )
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.status").value(400))
@@ -212,27 +244,20 @@ class AuthControllerTest {
         String email =
                 "protected-" + System.nanoTime() + "@example.com";
 
-        String rawPassword = "password123";
-
-        User user = new User();
-
-        user.setFullName("Protected Endpoint User");
-        user.setEmail(email);
-        user.setPasswordHash(
-                passwordEncoder.encode(rawPassword)
+        User user = createUser(
+                "Protected Endpoint User",
+                email,
+                "password123",
+                UserRole.USER,
+                AccountStatus.ACTIVE
         );
-        user.setMobileNumber("9876543210");
-        user.setRole(UserRole.STUDENT);
-        user.setAccountStatus(AccountStatus.ACTIVE);
-
-        userRepository.save(user);
 
         mockMvc.perform(
                 get("/api/users/me")
                         .with(jwt().jwt(jwt -> jwt
                                 .subject(user.getId().toString())
                                 .claim("email", user.getEmail())
-                                .claim("role", "STUDENT")
+                                .claim("role", "USER")
                         ))
         )
         .andExpect(status().isOk())
@@ -242,31 +267,26 @@ class AuthControllerTest {
         .andExpect(jsonPath("$.email").value(email))
         .andExpect(jsonPath("$.mobileNumber")
                 .value("9876543210"))
-        .andExpect(jsonPath("$.role").value("STUDENT"))
+        .andExpect(jsonPath("$.role").value("USER"))
         .andExpect(jsonPath("$.accountStatus").value("ACTIVE"))
         .andExpect(jsonPath("$.password").doesNotExist())
         .andExpect(jsonPath("$.passwordHash").doesNotExist());
     }
 
     @Test
-    void adminEndpoint_withStudentToken_shouldReturnForbidden()
+    void adminEndpoint_withUserToken_shouldReturnForbidden()
             throws Exception {
 
         String email =
-                "student-admin-" + System.nanoTime() + "@example.com";
+                "user-admin-" + System.nanoTime() + "@example.com";
 
-        User user = new User();
-
-        user.setFullName("Student User");
-        user.setEmail(email);
-        user.setPasswordHash(
-                passwordEncoder.encode("password123")
+        User user = createUser(
+                "Regular User",
+                email,
+                "password123",
+                UserRole.USER,
+                AccountStatus.ACTIVE
         );
-        user.setMobileNumber("9876543210");
-        user.setRole(UserRole.STUDENT);
-        user.setAccountStatus(AccountStatus.ACTIVE);
-
-        userRepository.save(user);
 
         mockMvc.perform(
                 get("/api/admin/dashboard")
@@ -274,11 +294,11 @@ class AuthControllerTest {
                                 .jwt(jwt -> jwt
                                         .subject(user.getId().toString())
                                         .claim("email", user.getEmail())
-                                        .claim("role", "STUDENT")
+                                        .claim("role", "USER")
                                 )
                                 .authorities(
                                         new org.springframework.security.core.authority
-                                                .SimpleGrantedAuthority("ROLE_STUDENT")
+                                                .SimpleGrantedAuthority("ROLE_USER")
                                 )
                         )
         )
@@ -292,18 +312,13 @@ class AuthControllerTest {
         String email =
                 "admin-" + System.nanoTime() + "@example.com";
 
-        User user = new User();
-
-        user.setFullName("Admin User");
-        user.setEmail(email);
-        user.setPasswordHash(
-                passwordEncoder.encode("password123")
+        User user = createUser(
+                "Admin User",
+                email,
+                "password123",
+                UserRole.ADMIN,
+                AccountStatus.ACTIVE
         );
-        user.setMobileNumber("9876543210");
-        user.setRole(UserRole.ADMIN);
-        user.setAccountStatus(AccountStatus.ACTIVE);
-
-        userRepository.save(user);
 
         mockMvc.perform(
                 get("/api/admin/dashboard")
@@ -320,8 +335,54 @@ class AuthControllerTest {
                         )
         )
         .andExpect(status().isOk())
-        .andExpect(
-                jsonPath("$").value("Admin dashboard")
-        );
+        .andExpect(jsonPath("$").value("Admin dashboard"));
+    }
+
+    private User createUser(
+            String fullName,
+            String email,
+            String rawPassword,
+            UserRole role,
+            AccountStatus accountStatus
+    ) {
+        User user = new User();
+
+        user.setFullName(fullName);
+        user.setEmail(email);
+        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        user.setMobileNumber("9876543210");
+        user.setRole(role);
+        user.setAccountStatus(accountStatus);
+
+        return userRepository.save(user);
+    }
+
+    private void withAccountApprovalSetting(
+            boolean required,
+            ThrowingRunnable action
+    ) throws Exception {
+
+        OrganizationSettings settings = settingsRepository
+                .findById((short) 1)
+                .orElseThrow();
+
+        boolean originalValue =
+                settings.isAccountApprovalRequired();
+
+        try {
+            settings.setAccountApprovalRequired(required);
+            settingsRepository.saveAndFlush(settings);
+
+            action.run();
+
+        } finally {
+            settings.setAccountApprovalRequired(originalValue);
+            settingsRepository.saveAndFlush(settings);
+        }
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Exception;
     }
 }

@@ -47,11 +47,9 @@ build/
 frontend/node_modules/
 frontend/dist/
 
+### Local debugging files
 
-
-# Local debugging files
 /startup-error.txt
-
 /backups/
-
 docker-compose.yml.backup-*
+*.backup
