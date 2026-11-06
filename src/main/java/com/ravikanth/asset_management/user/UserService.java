@@ -2,6 +2,8 @@
 package com.ravikanth.asset_management.user;
 
 import com.ravikanth.asset_management.common.EmailService;
+import com.ravikanth.asset_management.organization.OrganizationSettings;
+import com.ravikanth.asset_management.organization.OrganizationSettingsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailException;
@@ -21,18 +23,21 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final OrganizationSettingsRepository settingsRepository;
 
     public UserService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            EmailService emailService
+            EmailService emailService,
+            OrganizationSettingsRepository settingsRepository
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.settingsRepository = settingsRepository;
     }
 
-    // Register a new student
+    // Register a new user
     @Transactional
     public User registerUser(
             String fullName,
@@ -49,6 +54,8 @@ public class UserService {
             );
         }
 
+        OrganizationSettings settings = getSettings();
+
         User user = new User();
 
         user.setFullName(fullName);
@@ -59,8 +66,16 @@ public class UserService {
 
         user.setPasswordHash(encodedPassword);
         user.setMobileNumber(mobileNumber);
-        user.setRole(UserRole.STUDENT);
-        user.setAccountStatus(AccountStatus.UNAPPROVED);
+
+        // Public registration always creates a regular USER.
+        user.setRole(UserRole.USER);
+
+        // Account status depends on the organization's settings.
+        if (settings.isAccountApprovalRequired()) {
+            user.setAccountStatus(AccountStatus.UNAPPROVED);
+        } else {
+            user.setAccountStatus(AccountStatus.ACTIVE);
+        }
 
         return userRepository.save(user);
     }
@@ -79,7 +94,7 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    // Approve a user and send an approval email
+    // Approve a user and send an approval email when enabled
     @Transactional
     public User approveUser(Long userId) {
 
@@ -104,38 +119,46 @@ public class UserService {
 
         User approvedUser = userRepository.save(user);
 
-        // Email failure should not stop account approval
-        try {
-            String subject =
-                    "Your Asset Management account has been approved";
+        OrganizationSettings settings = getSettings();
 
-            String body =
-                    "Hello " + approvedUser.getFullName() + ",\n\n"
-                    + "Your Asset Management System account has been "
-                    + "approved by the administrator.\n\n"
-                    + "You can now log in using your registered email "
-                    + "address and password.\n\n"
-                    + "Thank you,\n"
-                    + "Asset Management Team";
+        // Send an email only when notifications are enabled.
+        if (settings.isEmailNotificationsEnabled()) {
+            try {
+                String organizationName =
+                        settings.getOrganizationName();
 
-            emailService.sendEmail(
-                    approvedUser.getEmail(),
-                    subject,
-                    body
-            );
+                String subject =
+                        "Your " + organizationName
+                                + " account has been approved";
 
-            logger.info(
-                    "Approval email sent for user ID {}",
-                    userId
-            );
+                String body =
+                        "Hello " + approvedUser.getFullName() + ",\n\n"
+                        + "Your " + organizationName
+                        + " account has been approved by the administrator.\n\n"
+                        + "You can now log in using your registered email "
+                        + "address and password.\n\n"
+                        + "Thank you,\n"
+                        + organizationName + " Team";
 
-        } catch (MailException e) {
-            logger.warn(
-                    "User ID {} was approved, but the approval email "
-                    + "could not be sent.",
-                    userId,
-                    e
-            );
+                emailService.sendEmail(
+                        approvedUser.getEmail(),
+                        subject,
+                        body
+                );
+
+                logger.info(
+                        "Approval email sent for user ID {}",
+                        userId
+                );
+
+            } catch (MailException e) {
+                logger.warn(
+                        "User ID {} was approved, but the approval email "
+                                + "could not be sent.",
+                        userId,
+                        e
+                );
+            }
         }
 
         return approvedUser;
@@ -165,5 +188,13 @@ public class UserService {
         user.setAccountStatus(AccountStatus.BLOCKED);
 
         return userRepository.save(user);
+    }
+
+    // Retrieve the organization's settings
+    private OrganizationSettings getSettings() {
+        return settingsRepository.findById((short) 1)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Organization settings have not been initialized"
+                ));
     }
 }

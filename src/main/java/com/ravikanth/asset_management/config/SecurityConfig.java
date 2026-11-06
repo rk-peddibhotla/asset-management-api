@@ -1,46 +1,42 @@
-
 package com.ravikanth.asset_management.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
-    // Configure the application's security rules
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http
     ) throws Exception {
 
         http
-                // JWT authentication does not use browser sessions
                 .csrf(csrf -> csrf.disable())
 
-                // Allow requests from the frontend
                 .cors(cors -> cors.configurationSource(
                         corsConfigurationSource()
                 ))
 
-                // Make the API stateless
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
 
-                // Define which endpoints require authentication
                 .authorizeHttpRequests(auth -> auth
 
                         // Registration and login are public
@@ -51,17 +47,17 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMIN")
 
-                        // Only admins can create categories
+                        // Only admins can create resource categories
                         .requestMatchers(
                                 HttpMethod.POST,
-                                "/api/categories"
+                                "/api/resource-categories"
                         )
                         .hasRole("ADMIN")
 
-                        // Only admins can create assets
+                        // Only admins can create resources
                         .requestMatchers(
                                 HttpMethod.POST,
-                                "/api/assets"
+                                "/api/resources"
                         )
                         .hasRole("ADMIN")
 
@@ -70,7 +66,6 @@ public class SecurityConfig {
                         .authenticated()
                 )
 
-                // Validate JWT tokens on protected requests
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .jwtAuthenticationConverter(
@@ -82,7 +77,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Configure which frontend can call the API
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
@@ -119,7 +113,6 @@ public class SecurityConfig {
         return source;
     }
 
-    // Convert the JWT role claim into a Spring Security authority
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
 
@@ -129,7 +122,7 @@ public class SecurityConfig {
         // Read the user's role from the JWT "role" claim
         authoritiesConverter.setAuthoritiesClaimName("role");
 
-        // Convert ADMIN into ROLE_ADMIN and STUDENT into ROLE_STUDENT
+        // Convert ADMIN into ROLE_ADMIN and USER into ROLE_USER
         authoritiesConverter.setAuthorityPrefix("ROLE_");
 
         JwtAuthenticationConverter converter =
@@ -142,4 +135,3 @@ public class SecurityConfig {
         return converter;
     }
 }
-
