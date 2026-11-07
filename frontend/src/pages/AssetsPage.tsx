@@ -1,61 +1,62 @@
 
 import { useEffect, useState } from "react";
 
-import { getAssets } from "../api/assets";
-import type { Asset } from "../api/assets";
-import { createOrder } from "../api/orders";
+import { getResources } from "../api/assets";
+import type { Resource } from "../api/assets";
+import { createBorrowing } from "../api/orders";
 import { getRole } from "../auth/authStorage";
 
 function AssetsPage() {
-  const isStudent = getRole() === "STUDENT";
+  const isUser = getRole() === "USER";
 
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [requestingAssetId, setRequestingAssetId] = useState<number | null>(
-    null
-  );
+  const [requestingResourceId, setRequestingResourceId] = useState<
+    number | null
+  >(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
 
   useEffect(() => {
-    async function loadAssets() {
+    async function loadResources() {
       try {
-        const response = await getAssets();
-        setAssets(response);
+        const response = await getResources();
+        setResources(response);
       } catch (error) {
         setError(
           error instanceof Error
             ? error.message
-            : "Failed to load assets."
+            : "Failed to load resources."
         );
       } finally {
         setLoading(false);
       }
     }
 
-    void loadAssets();
+    void loadResources();
   }, []);
 
   const categories = Array.from(
     new Set(
-      assets
-        .map((asset) => asset.category)
+      resources
+        .map((resource) => resource.category)
         .filter((category): category is string => Boolean(category))
     )
   ).sort();
 
-  const filteredAssets = assets.filter((asset) => {
+  const filteredResources = resources.filter((resource) => {
     const query = searchQuery.trim().toLowerCase();
 
     const searchableText = [
-      asset.name,
-      asset.manufacturer,
-      asset.category,
-      asset.subCategory,
+      resource.name,
+      resource.manufacturer,
+      resource.category,
+      resource.subCategory,
+      resource.description,
     ]
       .map((value) => String(value ?? "").toLowerCase())
       .join(" ");
@@ -64,45 +65,45 @@ function AssetsPage() {
 
     const matchesCategory =
       selectedCategory === "ALL" ||
-      asset.category === selectedCategory;
+      resource.category === selectedCategory;
 
     return matchesSearch && matchesCategory;
   });
 
-  async function handleRequest(assetId: number) {
-    if (!isStudent) {
+  async function handleRequest(resourceId: number) {
+    if (!isUser) {
       return;
     }
 
     setError("");
     setSuccess("");
-    setRequestingAssetId(assetId);
+    setRequestingResourceId(resourceId);
 
     try {
-      await createOrder({ assetId });
+      await createBorrowing({ resourceId });
 
       setSuccess(
-        "Asset request submitted. Waiting for administrator approval."
+        "Resource request submitted. Waiting for administrator approval."
       );
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to request asset."
+          : "Failed to request resource."
       );
     } finally {
-      setRequestingAssetId(null);
+      setRequestingResourceId(null);
     }
   }
 
   return (
     <section>
-      <h2 className="page-title">Assets</h2>
+      <h2 className="page-title">Resources</h2>
 
       <p className="page-description">
-        {isStudent
-          ? "View available assets and submit borrowing requests."
-          : "View all registered assets."}
+        {isUser
+          ? "View available resources and submit borrowing requests."
+          : "View all registered resources."}
       </p>
 
       {error && (
@@ -117,12 +118,12 @@ function AssetsPage() {
         </p>
       )}
 
-      {!loading && assets.length > 0 && (
+      {!loading && resources.length > 0 && (
         <div className="asset-filters">
           <input
             type="search"
-            placeholder="Search assets..."
-            aria-label="Search assets"
+            placeholder="Search resources..."
+            aria-label="Search resources"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
           />
@@ -130,9 +131,7 @@ function AssetsPage() {
           <select
             aria-label="Filter by category"
             value={selectedCategory}
-            onChange={(event) =>
-              setSelectedCategory(event.target.value)
-            }
+            onChange={(event) => setSelectedCategory(event.target.value)}
           >
             <option value="ALL">All Categories</option>
 
@@ -146,61 +145,71 @@ function AssetsPage() {
       )}
 
       {loading ? (
-        <p className="empty-message">
-          Loading assets...
-        </p>
-      ) : assets.length === 0 ? (
+        <p className="empty-message">Loading resources...</p>
+      ) : resources.length === 0 ? (
         !error && (
           <p className="empty-message">
-            No assets found.
+            No resources found.
           </p>
         )
-      ) : filteredAssets.length === 0 ? (
+      ) : filteredResources.length === 0 ? (
         <p className="empty-message">
-          No assets match your search or filters.
+          No resources match your search or filters.
         </p>
       ) : (
         <div className="table-container">
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Asset Name</th>
+                <th scope="col">Resource Name</th>
                 <th scope="col">Manufacturer</th>
                 <th scope="col">Category</th>
-                <th scope="col">Price</th>
+                <th scope="col">Purchase Price</th>
+                <th scope="col">Status</th>
 
-                {isStudent && (
+                {isUser && (
                   <th scope="col">Action</th>
                 )}
               </tr>
             </thead>
 
             <tbody>
-              {filteredAssets.map((asset) => (
-                <tr key={asset.id}>
-                  <td>{asset.name}</td>
+              {filteredResources.map((resource) => (
+                <tr key={resource.id}>
+                  <td>{resource.name}</td>
 
-                  <td>{asset.manufacturer ?? "N/A"}</td>
+                  <td>{resource.manufacturer ?? "N/A"}</td>
 
                   <td>
-                    {asset.category ?? "N/A"}
+                    {resource.category ?? "N/A"}
                     {" / "}
-                    {asset.subCategory ?? "N/A"}
+                    {resource.subCategory ?? "N/A"}
                   </td>
 
-                  <td>₹{asset.price.toFixed(2)}</td>
+                  <td>
+                    {resource.purchasePrice == null
+                      ? "N/A"
+                      : `₹${resource.purchasePrice.toFixed(2)}`}
+                  </td>
 
-                  {isStudent && (
+                  <td>{resource.status}</td>
+
+                  {isUser && (
                     <td>
                       <button
                         type="button"
                         className="secondary-button"
-                        onClick={() => handleRequest(asset.id)}
-                        disabled={requestingAssetId !== null}
+                        onClick={() => handleRequest(resource.id)}
+                        disabled={
+                          requestingResourceId !== null ||
+                          resource.status !== "AVAILABLE"
+                        }
                       >
-                        {requestingAssetId === asset.id
+                        {requestingResourceId === resource.id
                           ? "Requesting..."
-                          : "Request"}
+                          : resource.status === "AVAILABLE"
+                            ? "Request"
+                            : "Unavailable"}
                       </button>
                     </td>
                   )}

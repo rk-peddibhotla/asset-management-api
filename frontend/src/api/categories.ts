@@ -1,6 +1,7 @@
+
 import { apiRequest } from "./client";
 
-export interface AssetCategory {
+export interface ResourceCategory {
   id: number;
   category: string;
   subCategory: string;
@@ -11,14 +12,14 @@ export interface CreateCategoryRequest {
   subCategory: string;
 }
 
-export function getCategories(): Promise<AssetCategory[]> {
-  return apiRequest<AssetCategory[]>("/categories");
+export function getCategories(): Promise<ResourceCategory[]> {
+  return apiRequest<ResourceCategory[]>("/resource-categories");
 }
 
 export function createCategory(
   request: CreateCategoryRequest
-): Promise<AssetCategory> {
-  return apiRequest<AssetCategory>("/categories", {
+): Promise<ResourceCategory> {
+  return apiRequest<ResourceCategory>("/resource-categories", {
     method: "POST",
     body: JSON.stringify(request),
   });

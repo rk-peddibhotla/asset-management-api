@@ -1,16 +1,16 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 
-import { createAsset } from "../api/assets";
+import { createResource } from "../api/assets";
 
 import {
   createCategory,
   getCategories,
-  type AssetCategory,
+  type ResourceCategory,
 } from "../api/categories";
 
 function ManageAssetsPage() {
-  const [categories, setCategories] = useState<AssetCategory[]>([]);
+  const [categories, setCategories] = useState<ResourceCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [category, setCategory] = useState("");
@@ -18,14 +18,15 @@ function ManageAssetsPage() {
 
   const [name, setName] = useState("");
   const [manufacturer, setManufacturer] = useState("");
-  const [price, setPrice] = useState("");
+  const [purchasePrice, setPurchasePrice] = useState("");
+  const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const [creatingCategory, setCreatingCategory] = useState(false);
-  const [creatingAsset, setCreatingAsset] = useState(false);
+  const [creatingResource, setCreatingResource] = useState(false);
 
   useEffect(() => {
     async function loadCategories() {
@@ -79,7 +80,7 @@ function ManageAssetsPage() {
     }
   }
 
-  async function handleCreateAsset(
+  async function handleCreateResource(
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
@@ -92,38 +93,40 @@ function ManageAssetsPage() {
       return;
     }
 
-    setCreatingAsset(true);
+    setCreatingResource(true);
 
     try {
-      await createAsset({
+      await createResource({
         name: name.trim(),
         manufacturer: manufacturer.trim(),
-        price: Number(price),
+        purchasePrice: Number(purchasePrice),
+        description: description.trim(),
         categoryId: Number(categoryId),
       });
 
       setName("");
       setManufacturer("");
-      setPrice("");
+      setPurchasePrice("");
+      setDescription("");
 
-      setSuccess("Asset created successfully.");
+      setSuccess("Resource created successfully.");
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to create asset."
+          : "Failed to create resource."
       );
     } finally {
-      setCreatingAsset(false);
+      setCreatingResource(false);
     }
   }
 
   return (
     <section>
-      <h2 className="page-title">Manage Assets</h2>
+      <h2 className="page-title">Manage Resources</h2>
 
       <p className="page-description">
-        Add asset categories and register new assets.
+        Add resource categories and register new resources.
       </p>
 
       {error && (
@@ -200,19 +203,19 @@ function ManageAssetsPage() {
           </section>
 
           <section className="management-panel">
-            <h3>Add Asset</h3>
+            <h3>Add Resource</h3>
 
             <form
               className="management-form"
-              onSubmit={handleCreateAsset}
+              onSubmit={handleCreateResource}
             >
               <div className="form-field">
-                <label htmlFor="assetName">
-                  Asset Name
+                <label htmlFor="resourceName">
+                  Resource Name
                 </label>
 
                 <input
-                  id="assetName"
+                  id="resourceName"
                   type="text"
                   value={name}
                   onChange={(event) =>
@@ -242,30 +245,46 @@ function ManageAssetsPage() {
               </div>
 
               <div className="form-field">
-                <label htmlFor="price">
-                  Price (₹)
+                <label htmlFor="purchasePrice">
+                  Purchase Price (₹)
                 </label>
 
                 <input
-                  id="price"
+                  id="purchasePrice"
                   type="number"
                   min="0"
                   step="0.01"
-                  value={price}
+                  value={purchasePrice}
                   onChange={(event) =>
-                    setPrice(event.target.value)
+                    setPurchasePrice(event.target.value)
                   }
                   required
                 />
               </div>
 
               <div className="form-field">
-                <label htmlFor="assetCategory">
+                <label htmlFor="description">
+                  Description (optional)
+                </label>
+
+                <textarea
+                  id="description"
+                  value={description}
+                  onChange={(event) =>
+                    setDescription(event.target.value)
+                  }
+                  placeholder="Briefly describe the resource"
+                  rows={3}
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="resourceCategory">
                   Category
                 </label>
 
                 <select
-                  id="assetCategory"
+                  id="resourceCategory"
                   value={categoryId}
                   onChange={(event) =>
                     setCategoryId(event.target.value)
@@ -288,7 +307,7 @@ function ManageAssetsPage() {
 
                 {categories.length === 0 && (
                   <p className="form-hint">
-                    Add a category before creating an asset.
+                    Add a category before creating a resource.
                   </p>
                 )}
               </div>
@@ -297,12 +316,12 @@ function ManageAssetsPage() {
                 type="submit"
                 className="primary-button"
                 disabled={
-                  categories.length === 0 || creatingAsset
+                  categories.length === 0 || creatingResource
                 }
               >
-                {creatingAsset
+                {creatingResource
                   ? "Adding..."
-                  : "Add Asset"}
+                  : "Add Resource"}
               </button>
             </form>
           </section>

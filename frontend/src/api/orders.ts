@@ -1,73 +1,68 @@
 
 import { apiRequest } from "./client";
 
-export interface CreateOrderRequest {
-  assetId: number;
+export interface CreateBorrowingRequest {
+  resourceId: number;
 }
 
-export interface Order {
+export interface Borrowing {
   id: number;
   userId: number;
   userName: string;
   userEmail: string;
-  assetId: number;
-  assetName: string;
+  resourceId: number;
+  resourceName: string;
   status: string;
   requestedAt: string;
-  approvedAt: string | null;
+  activatedAt: string | null;
   dueAt: string | null;
   returnedAt: string | null;
-  fineAmount: number;
+  lateFeeAmount: number;
 }
 
-// Student: Request an asset
-export function createOrder(
-  request: CreateOrderRequest
-): Promise<Order> {
-  return apiRequest<Order>("/orders", {
+export function createBorrowing(
+  request: CreateBorrowingRequest
+): Promise<Borrowing> {
+  return apiRequest<Borrowing>("/borrowings", {
     method: "POST",
     body: JSON.stringify(request),
   });
 }
 
-// Student: Get personal borrowing history
-export function getMyOrders(): Promise<Order[]> {
-  return apiRequest<Order[]>("/orders/my");
+export function getMyBorrowings(): Promise<Borrowing[]> {
+  return apiRequest<Borrowing[]>("/borrowings/my");
 }
 
-// Student: Return a borrowed asset
-export function returnOrder(orderId: number): Promise<Order> {
-  return apiRequest<Order>(`/orders/${orderId}/return`, {
+export function returnBorrowing(
+  borrowingId: number
+): Promise<Borrowing> {
+  return apiRequest<Borrowing>(`/borrowings/${borrowingId}/return`, {
     method: "PATCH",
   });
 }
 
-// Administrator: Get pending borrowing requests
-export function getPendingOrders(): Promise<Order[]> {
-  return apiRequest<Order[]>("/admin/orders/pending");
+export function getPendingBorrowings(): Promise<Borrowing[]> {
+  return apiRequest<Borrowing[]>("/admin/borrowings/pending");
 }
 
-// Administrator: Approve a borrowing request
-export function approveOrder(orderId: number): Promise<Order> {
-  return apiRequest<Order>(
-    `/admin/orders/${orderId}/approve`,
-    {
-      method: "PATCH",
-    }
+export function approveBorrowing(
+  borrowingId: number
+): Promise<Borrowing> {
+  return apiRequest<Borrowing>(
+    `/admin/borrowings/${borrowingId}/approve`,
+    { method: "PATCH" }
   );
 }
 
-// Administrator: Reject a borrowing request
-export function rejectOrder(orderId: number): Promise<Order> {
-  return apiRequest<Order>(
-    `/admin/orders/${orderId}/reject`,
-    {
-      method: "PATCH",
-    }
+export function rejectBorrowing(
+  borrowingId: number
+): Promise<Borrowing> {
+  return apiRequest<Borrowing>(
+    `/admin/borrowings/${borrowingId}/reject`,
+    { method: "PATCH" }
   );
 }
 
-// Administrator: Get complete borrowing history
-export function getAllOrders(): Promise<Order[]> {
-  return apiRequest<Order[]>("/admin/orders");
+export function getAllBorrowings(): Promise<Borrowing[]> {
+  return apiRequest<Borrowing[]>("/admin/borrowings");
 }

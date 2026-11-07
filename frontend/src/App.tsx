@@ -53,10 +53,10 @@ function App() {
     useState<AuthPage>("login");
 
   const isAdmin = role === "ADMIN";
-  const isStudent = role === "STUDENT";
+  const isUser = role === "USER";
 
   useEffect(() => {
-    if (!authenticated || !isStudent) {
+    if (!authenticated || !isUser) {
       return;
     }
 
@@ -85,14 +85,14 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [authenticated, isStudent]);
+  }, [authenticated, isUser]);
 
   const portalSubtitle = isAdmin
     ? "Admin Portal"
-    : isStudent
+    : isUser
       ? fullName
         ? `${fullName}'s Portal`
-        : "Student Portal"
+        : "User Portal"
       : "Resource Management Portal";
 
   function handleLogin() {
@@ -149,10 +149,10 @@ function App() {
               }
               onClick={() => setPage("assets")}
             >
-              Assets
+              Resources
             </button>
 
-            {isStudent && (
+            {isUser && (
               <button
                 type="button"
                 className={
@@ -163,7 +163,7 @@ function App() {
                 }
                 onClick={() => setPage("orders")}
               >
-                My Orders
+                My Borrowings
               </button>
             )}
 
@@ -185,7 +185,7 @@ function App() {
                     setPage("manage-assets")
                   }
                 >
-                  Manage Assets
+                  Manage Resources
                 </button>
 
                 <button
@@ -242,7 +242,7 @@ function App() {
                     setPage("admin-orders")
                   }
                 >
-                  Pending Orders
+                  Pending Borrowings
                 </button>
 
                 <button
@@ -261,7 +261,7 @@ function App() {
                     setPage("all-orders")
                   }
                 >
-                  All Orders
+                  All Borrowings
                 </button>
               </>
             )}
@@ -281,7 +281,7 @@ function App() {
         {page === "assets" && <AssetsPage />}
 
         {page === "orders" &&
-          isStudent && (
+          isUser && (
             <MyOrdersPage />
           )}
 

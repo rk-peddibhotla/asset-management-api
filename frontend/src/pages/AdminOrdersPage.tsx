@@ -2,86 +2,90 @@
 import { useEffect, useState } from "react";
 
 import {
-  approveOrder,
-  getPendingOrders,
-  rejectOrder,
+  approveBorrowing,
+  getPendingBorrowings,
+  rejectBorrowing,
 } from "../api/orders";
 
-import type { Order } from "../api/orders";
+import type { Borrowing } from "../api/orders";
 
 function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [borrowings, setBorrowings] = useState<Borrowing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [processingOrderId, setProcessingOrderId] = useState<number | null>(
-    null
-  );
+  const [processingBorrowingId, setProcessingBorrowingId] = useState<
+    number | null
+  >(null);
 
   useEffect(() => {
-    async function loadPendingOrders() {
+    async function loadPendingBorrowings() {
       try {
-        const response = await getPendingOrders();
-        setOrders(response);
+        const response = await getPendingBorrowings();
+        setBorrowings(response);
       } catch (error) {
         setError(
           error instanceof Error
             ? error.message
-            : "Failed to load pending orders."
+            : "Failed to load pending borrowings."
         );
       } finally {
         setLoading(false);
       }
     }
 
-    void loadPendingOrders();
+    void loadPendingBorrowings();
   }, []);
 
-  async function handleApprove(orderId: number) {
+  async function handleApprove(borrowingId: number) {
     setError("");
     setSuccess("");
-    setProcessingOrderId(orderId);
+    setProcessingBorrowingId(borrowingId);
 
     try {
-      await approveOrder(orderId);
+      await approveBorrowing(borrowingId);
 
-      setOrders((currentOrders) =>
-        currentOrders.filter((order) => order.id !== orderId)
+      setBorrowings((currentBorrowings) =>
+        currentBorrowings.filter(
+          (borrowing) => borrowing.id !== borrowingId
+        )
       );
 
-      setSuccess("Order approved successfully.");
+      setSuccess("Borrowing request approved successfully.");
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to approve order."
+          : "Failed to approve borrowing request."
       );
     } finally {
-      setProcessingOrderId(null);
+      setProcessingBorrowingId(null);
     }
   }
 
-  async function handleReject(orderId: number) {
+  async function handleReject(borrowingId: number) {
     setError("");
     setSuccess("");
-    setProcessingOrderId(orderId);
+    setProcessingBorrowingId(borrowingId);
 
     try {
-      await rejectOrder(orderId);
+      await rejectBorrowing(borrowingId);
 
-      setOrders((currentOrders) =>
-        currentOrders.filter((order) => order.id !== orderId)
+      setBorrowings((currentBorrowings) =>
+        currentBorrowings.filter(
+          (borrowing) => borrowing.id !== borrowingId
+        )
       );
 
-      setSuccess("Order rejected successfully.");
+      setSuccess("Borrowing request rejected successfully.");
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to reject order."
+          : "Failed to reject borrowing request."
       );
     } finally {
-      setProcessingOrderId(null);
+      setProcessingBorrowingId(null);
     }
   }
 
@@ -91,10 +95,10 @@ function AdminOrdersPage() {
 
   return (
     <section>
-      <h2 className="page-title">Pending Orders</h2>
+      <h2 className="page-title">Pending Borrowings</h2>
 
       <p className="page-description">
-        Review student borrowing requests and approve or reject orders.
+        Review user borrowing requests and approve or reject them.
       </p>
 
       {error && (
@@ -111,12 +115,12 @@ function AdminOrdersPage() {
 
       {loading ? (
         <p className="empty-message">
-          Loading pending orders...
+          Loading pending borrowings...
         </p>
-      ) : orders.length === 0 ? (
+      ) : borrowings.length === 0 ? (
         !error && (
           <p className="empty-message">
-            No pending orders found.
+            No pending borrowings found.
           </p>
         )
       ) : (
@@ -124,10 +128,10 @@ function AdminOrdersPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Order ID</th>
-                <th scope="col">Student Name</th>
-                <th scope="col">Student Email</th>
-                <th scope="col">Asset Name</th>
+                <th scope="col">Borrowing ID</th>
+                <th scope="col">User Name</th>
+                <th scope="col">User Email</th>
+                <th scope="col">Resource Name</th>
                 <th scope="col">Requested On</th>
                 <th scope="col">Status</th>
                 <th scope="col">Actions</th>
@@ -135,23 +139,23 @@ function AdminOrdersPage() {
             </thead>
 
             <tbody>
-              {orders.map((order) => (
-                <tr key={order.id}>
-                  <td>#{order.id}</td>
+              {borrowings.map((borrowing) => (
+                <tr key={borrowing.id}>
+                  <td>#{borrowing.id}</td>
 
-                  <td>{order.userName}</td>
+                  <td>{borrowing.userName}</td>
 
-                  <td>{order.userEmail}</td>
+                  <td>{borrowing.userEmail}</td>
 
-                  <td>{order.assetName}</td>
+                  <td>{borrowing.resourceName}</td>
 
-                  <td>{formatDate(order.requestedAt)}</td>
+                  <td>{formatDate(borrowing.requestedAt)}</td>
 
                   <td>
                     <span
-                      className={`status status-${order.status.toLowerCase()}`}
+                      className={`status status-${borrowing.status.toLowerCase()}`}
                     >
-                      {order.status}
+                      {borrowing.status}
                     </span>
                   </td>
 
@@ -160,10 +164,10 @@ function AdminOrdersPage() {
                       <button
                         type="button"
                         className="secondary-button"
-                        onClick={() => handleApprove(order.id)}
-                        disabled={processingOrderId !== null}
+                        onClick={() => handleApprove(borrowing.id)}
+                        disabled={processingBorrowingId !== null}
                       >
-                        {processingOrderId === order.id
+                        {processingBorrowingId === borrowing.id
                           ? "Processing..."
                           : "Approve"}
                       </button>
@@ -171,10 +175,10 @@ function AdminOrdersPage() {
                       <button
                         type="button"
                         className="danger-button"
-                        onClick={() => handleReject(order.id)}
-                        disabled={processingOrderId !== null}
+                        onClick={() => handleReject(borrowing.id)}
+                        disabled={processingBorrowingId !== null}
                       >
-                        {processingOrderId === order.id
+                        {processingBorrowingId === borrowing.id
                           ? "Processing..."
                           : "Reject"}
                       </button>

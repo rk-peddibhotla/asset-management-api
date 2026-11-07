@@ -1,52 +1,52 @@
 
 import { useEffect, useState } from "react";
 
-import { getAllOrders } from "../api/orders";
-import type { Order } from "../api/orders";
+import { getAllBorrowings } from "../api/orders";
+import type { Borrowing } from "../api/orders";
 
 function AllOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [borrowings, setBorrowings] = useState<Borrowing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    async function loadAllOrders() {
+    async function loadAllBorrowings() {
       try {
-        const response = await getAllOrders();
-        setOrders(response);
+        const response = await getAllBorrowings();
+        setBorrowings(response);
       } catch (error) {
         setError(
           error instanceof Error
             ? error.message
-            : "Failed to load orders."
+            : "Failed to load borrowing records."
         );
       } finally {
         setLoading(false);
       }
     }
 
-    void loadAllOrders();
+    void loadAllBorrowings();
   }, []);
 
   function formatDate(value: string | null): string {
     if (!value) {
-      return "-";
+      return "—";
     }
 
     return new Date(value).toLocaleString();
   }
 
-  function formatFine(value: number | null): string {
+  function formatLateFee(value: number | null): string {
     return `₹${(value ?? 0).toFixed(2)}`;
   }
 
   return (
     <section>
-      <h2 className="page-title">All Orders</h2>
+      <h2 className="page-title">All Borrowings</h2>
 
       <p className="page-description">
-        View all student borrowing requests, active loans,
-        returns, and fines.
+        View all user borrowing requests, active loans,
+        returns, and late fees.
       </p>
 
       {error && (
@@ -57,12 +57,12 @@ function AllOrdersPage() {
 
       {loading ? (
         <p className="empty-message">
-          Loading orders...
+          Loading borrowings...
         </p>
-      ) : orders.length === 0 ? (
+      ) : borrowings.length === 0 ? (
         !error && (
           <p className="empty-message">
-            No orders found.
+            No borrowing records found.
           </p>
         )
       ) : (
@@ -70,44 +70,44 @@ function AllOrdersPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Order ID</th>
-                <th scope="col">Student Name</th>
-                <th scope="col">Student Email</th>
-                <th scope="col">Asset Name</th>
+                <th scope="col">Borrowing ID</th>
+                <th scope="col">User Name</th>
+                <th scope="col">User Email</th>
+                <th scope="col">Resource Name</th>
                 <th scope="col">Requested On</th>
                 <th scope="col">Status</th>
                 <th scope="col">Due Date</th>
                 <th scope="col">Returned On</th>
-                <th scope="col">Fine</th>
+                <th scope="col">Late Fee</th>
               </tr>
             </thead>
 
             <tbody>
-              {orders.map((order) => (
-                <tr key={order.id}>
-                  <td>#{order.id}</td>
+              {borrowings.map((borrowing) => (
+                <tr key={borrowing.id}>
+                  <td>#{borrowing.id}</td>
 
-                  <td>{order.userName}</td>
+                  <td>{borrowing.userName}</td>
 
-                  <td>{order.userEmail}</td>
+                  <td>{borrowing.userEmail}</td>
 
-                  <td>{order.assetName}</td>
+                  <td>{borrowing.resourceName}</td>
 
-                  <td>{formatDate(order.requestedAt)}</td>
+                  <td>{formatDate(borrowing.requestedAt)}</td>
 
                   <td>
                     <span
-                      className={`status status-${order.status.toLowerCase()}`}
+                      className={`status status-${borrowing.status.toLowerCase()}`}
                     >
-                      {order.status}
+                      {borrowing.status}
                     </span>
                   </td>
 
-                  <td>{formatDate(order.dueAt)}</td>
+                  <td>{formatDate(borrowing.dueAt)}</td>
 
-                  <td>{formatDate(order.returnedAt)}</td>
+                  <td>{formatDate(borrowing.returnedAt)}</td>
 
-                  <td>{formatFine(order.fineAmount)}</td>
+                  <td>{formatLateFee(borrowing.lateFeeAmount)}</td>
                 </tr>
               ))}
             </tbody>

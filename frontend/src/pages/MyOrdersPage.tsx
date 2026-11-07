@@ -1,60 +1,65 @@
 
 import { useEffect, useState } from "react";
 
-import { getMyOrders, returnOrder } from "../api/orders";
-import type { Order } from "../api/orders";
+import {
+  getMyBorrowings,
+  returnBorrowing,
+} from "../api/orders";
+import type { Borrowing } from "../api/orders";
 
 function MyOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [borrowings, setBorrowings] = useState<Borrowing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [returningOrderId, setReturningOrderId] = useState<number | null>(
-    null
-  );
+  const [returningBorrowingId, setReturningBorrowingId] = useState<
+    number | null
+  >(null);
 
   useEffect(() => {
-    async function loadOrders() {
+    async function loadBorrowings() {
       try {
-        const response = await getMyOrders();
-        setOrders(response);
+        const response = await getMyBorrowings();
+        setBorrowings(response);
       } catch (error) {
         setError(
           error instanceof Error
             ? error.message
-            : "Failed to load orders."
+            : "Failed to load borrowing records."
         );
       } finally {
         setLoading(false);
       }
     }
 
-    void loadOrders();
+    void loadBorrowings();
   }, []);
 
-  async function handleReturn(orderId: number) {
+  async function handleReturn(borrowingId: number) {
     setError("");
     setSuccess("");
-    setReturningOrderId(orderId);
+    setReturningBorrowingId(borrowingId);
 
     try {
-      const updatedOrder = await returnOrder(orderId);
+      const updatedBorrowing = await returnBorrowing(borrowingId);
 
-      setOrders((currentOrders) =>
-        currentOrders.map((order) =>
-          order.id === orderId ? updatedOrder : order
+      setBorrowings((currentBorrowings) =>
+        currentBorrowings.map((borrowing) =>
+          borrowing.id === borrowingId
+            ? updatedBorrowing
+            : borrowing
         )
       );
 
-      setSuccess("Asset returned successfully.");
+      setSuccess("Resource returned successfully.");
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to return asset."
+          : "Failed to return resource."
       );
     } finally {
-      setReturningOrderId(null);
+      setReturningBorrowingId(null);
     }
   }
 
@@ -64,10 +69,10 @@ function MyOrdersPage() {
 
   return (
     <section>
-      <h2 className="page-title">My Orders</h2>
+      <h2 className="page-title">My Borrowings</h2>
 
       <p className="page-description">
-        View borrowing requests and return records.
+        View your borrowing requests and return records.
       </p>
 
       {error && (
@@ -83,57 +88,57 @@ function MyOrdersPage() {
       )}
 
       {loading ? (
-        <p className="empty-message">Loading orders...</p>
-      ) : orders.length === 0 && !error ? (
-        <p className="empty-message">No orders found.</p>
-      ) : orders.length > 0 ? (
+        <p className="empty-message">Loading borrowings...</p>
+      ) : borrowings.length === 0 && !error ? (
+        <p className="empty-message">No borrowing records found.</p>
+      ) : borrowings.length > 0 ? (
         <div className="table-container">
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Order ID</th>
-                <th scope="col">Asset Name</th>
+                <th scope="col">Borrowing ID</th>
+                <th scope="col">Resource Name</th>
                 <th scope="col">Status</th>
                 <th scope="col">Requested On</th>
                 <th scope="col">Due Date</th>
                 <th scope="col">Returned On</th>
-                <th scope="col">Fine</th>
+                <th scope="col">Late Fee</th>
                 <th scope="col">Action</th>
               </tr>
             </thead>
 
             <tbody>
-              {orders.map((order) => (
-                <tr key={order.id}>
-                  <td>#{order.id}</td>
+              {borrowings.map((borrowing) => (
+                <tr key={borrowing.id}>
+                  <td>#{borrowing.id}</td>
 
-                  <td>{order.assetName}</td>
+                  <td>{borrowing.resourceName}</td>
 
                   <td>
                     <span
-                      className={`status status-${order.status.toLowerCase()}`}
+                      className={`status status-${borrowing.status.toLowerCase()}`}
                     >
-                      {order.status}
+                      {borrowing.status}
                     </span>
                   </td>
 
-                  <td>{formatDate(order.requestedAt)}</td>
+                  <td>{formatDate(borrowing.requestedAt)}</td>
 
-                  <td>{formatDate(order.dueAt)}</td>
+                  <td>{formatDate(borrowing.dueAt)}</td>
 
-                  <td>{formatDate(order.returnedAt)}</td>
+                  <td>{formatDate(borrowing.returnedAt)}</td>
 
-                  <td>₹{order.fineAmount.toFixed(2)}</td>
+                  <td>₹{borrowing.lateFeeAmount.toFixed(2)}</td>
 
                   <td>
-                    {order.status === "ACTIVE" ? (
+                    {borrowing.status === "ACTIVE" ? (
                       <button
                         type="button"
                         className="secondary-button"
-                        onClick={() => handleReturn(order.id)}
-                        disabled={returningOrderId !== null}
+                        onClick={() => handleReturn(borrowing.id)}
+                        disabled={returningBorrowingId !== null}
                       >
-                        {returningOrderId === order.id
+                        {returningBorrowingId === borrowing.id
                           ? "Returning..."
                           : "Return"}
                       </button>

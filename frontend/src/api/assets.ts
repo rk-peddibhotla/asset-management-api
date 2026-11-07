@@ -1,37 +1,40 @@
 
 import { apiRequest } from "./client";
 
-export interface AssetCategory {
+export interface ResourceCategory {
   id: number;
   category: string;
   subCategory: string;
 }
 
-export interface Asset {
+export interface Resource {
   id: number;
   name: string;
   manufacturer: string | null;
-  price: number;
+  purchasePrice: number | null;
+  description: string | null;
+  status: "AVAILABLE" | "UNAVAILABLE";
   categoryId: number;
   category: string;
   subCategory: string;
 }
 
-export interface CreateAssetRequest {
+export interface CreateResourceRequest {
   name: string;
   manufacturer: string;
-  price: number;
+  purchasePrice: number;
+  description: string;
   categoryId: number;
 }
 
-export function getAssets(): Promise<Asset[]> {
-  return apiRequest<Asset[]>("/assets");
+export function getResources(): Promise<Resource[]> {
+  return apiRequest<Resource[]>("/resources");
 }
 
-export function createAsset(
-  request: CreateAssetRequest
-): Promise<Asset> {
-  return apiRequest<Asset>("/assets", {
+export function createResource(
+  request: CreateResourceRequest
+): Promise<Resource> {
+  return apiRequest<Resource>("/resources", {
     method: "POST",
     body: JSON.stringify(request),
   });

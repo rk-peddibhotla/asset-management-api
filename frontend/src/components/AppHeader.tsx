@@ -14,7 +14,7 @@ function AppHeader({
     <header className="app-header">
       <div className="app-brand">
         <span className="app-brand-title">
-          Asset Management System
+          Resource Management Portal
         </span>
 
         <span className="app-brand-subtitle">

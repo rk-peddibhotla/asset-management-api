@@ -19,9 +19,9 @@ function AuthLayout({ children }: AuthLayoutProps) {
 
       <footer className="auth-footer">
         <p>
-          Asset Management System
+          Resource Management Portal
           <span aria-hidden="true"> · </span>
-          Student and administrator access
+          User and administrator access
         </p>
       </footer>
     </div>
