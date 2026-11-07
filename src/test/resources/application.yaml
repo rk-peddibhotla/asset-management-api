@@ -3,14 +3,14 @@ spring:
     name: asset-management-api
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/asset_management_test_run
+    url: jdbc:postgresql://localhost:5432/asset_management_test_fresh
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD}
 
   flyway:
     enabled: true
     clean-disabled: true
-    url: jdbc:postgresql://localhost:5432/asset_management_test_run
+    url: jdbc:postgresql://localhost:5432/asset_management_test_fresh
     user: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD}
 
